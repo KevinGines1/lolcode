@@ -2,6 +2,7 @@
 from tkinter import * 
 from tkinter import filedialog
 from tkinter import ttk
+import re
 
 #* -- GUI INITIALIZATIONS --
 window = Tk()
@@ -15,7 +16,7 @@ class SourceCode(): # * class for the source code
     # constructor
     def __init__(self):
         self.code = "" # initialize the holder for the entire code
-        self.lexemes = [] # initialize the list of lexemes
+        self.keywords = {"^HAI$": "Program Delimiter", "KTHXBYE": "Program Delimiter", "BTW":"Comment", "OBTW":"Comment Delimiter", "TLDR":"Comment Delimiter", "I HAS A":"Variable Declaration", "ITZ":"Variable Assignment", "R":"Assignment Operation Keyword", "\"": "String Delimiter", "VISIBLE": "Output Keyword"} # initialize the list of lexemes
 
     def addCode(self, code): # set the code for object
         self.code = code
@@ -23,13 +24,16 @@ class SourceCode(): # * class for the source code
     def getCode(self):
         return self.code
 
+    def getKeyWords(self):
+        return self.keywords
+
     def showMe(self):
         print("=====SOURCE CODE=====")
         print("THE CODE: ")
         print(self.code)
         print("---------------------")
-        print("LEXEMES")
-        print(self.lexemes)
+        print("KEYWORDS")
+        print(self.keywords)
         print("=====================")
 
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
@@ -42,7 +46,11 @@ class SelectGUI(): # * class for grouping the select button and displaying the c
         self.codeDisplay.place(x=10, y=50)
 
     def setCodeDisplay(self, code):
+        self.codeDisplay.delete('1.0', END)
         self.codeDisplay.insert(END, code)
+
+    def getCodeDisplay(self):
+        return self.codeDisplay
 
 class TablesGUI(): # * class for accessing and displaying the lexemes and symbol table
     def __init__(self):
@@ -72,6 +80,12 @@ class TablesGUI(): # * class for accessing and displaying the lexemes and symbol
         self.symbolTable.configure(yscrollcommand=self.symbolTableScroll.set)
 
 
+    def getLexTable(self):
+        return self.lexTable
+    
+    def populateLexTable(self, word, classification):
+        self.lexTable.insert("", "end", values=(str(word), classification))
+
 class TerminalGUI(): # * class for accessing and displaying the "terminal", where the output of the program will be displayed
     def __init__(self):
         IT = "" # this is the implicit IT variable
@@ -80,26 +94,55 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         self.executeButton = Button(window, text="EXECUTE", width = 19, command=executeCode)
         self.executeButton.place(x=10, y= 375, width=1185)
         #textbox
-        self.codeOutput = Text(window, background="white")
+        self.codeOutput = Text(window, background="white") # make this uneditable
         self.codeOutput.place(x=10, y=405, width=1185, height=325)
+
+    def setDisplay(self, code):
+        self.codeOutput.config(state=NORMAL)
+        self.codeOutput.delete('1.0', END)
+        self.codeOutput.insert(END, code)
+        self.codeOutput.config(state=DISABLED)
+
 
         
 #* -------------
 #* -- FUNCTIONS --
+def generateLexemes(): #* function that generates the lexemes of the code in codeDisplay
+    code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end")
+    # code = code.replace("\n", " ") # replace new lines with spaces so that we only have one delimiter
+    code = code.replace("\t", "") # replace new lines with spaces so that we only have one delimiter
+    code = code.split("\n")
+    print(code)
+    lexTable = lexAndSymbolTables.getLexTable()
+    for word in code:
+        if re.search("^HAI$", word):
+            lexAndSymbolTables.populateLexTable(word, theCode.getKeyWords()["I HAS A"])
+        elif re.search("^VISIBLE", word):
+            lexAndSymbolTables.populateLexTable(word, theCode.getKeyWords()["VISIBLE"])
+        for keyword, classification in theCode.getKeyWords().items():
+            if word==keyword:
+                lexAndSymbolTables.populateLexTable(word, classification)
+
+
+
+
 def executeCode(): #* function that executes the loaded code
-    print("EXECUTE CODE")
-    # ! thinking of whether we get the code in the textbox OR from the "Source Code" file
+    # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
+    terminal.setDisplay("Compiling...")
+    generateLexemes()
 
 def readCode(filename): # * function that reads the code in the passed filename
     f = open(filename)
     code = f.read() # read the code inside the text file
     theCode.addCode(code) # add the code to the initialized object
-    theCode.showMe()
-    interpreter.setCodeDisplay(theCode.getCode())
-def selectSourceCode():
+    # theCode.showMe()
+    codeSelectAndDisplay.setCodeDisplay(theCode.getCode())
+
+def selectSourceCode(): 
     # make the dialog be strict in selecting files by only allowing .lol code to be selected
     filename = filedialog.askopenfilename(initialdir = "/", title = "Select a File", filetypes = (("Text files", "*.lol*"),("all files","*.*")))
     readCode(filename)
+
 #* ---------------
 
 # * initialize the objects for the program
