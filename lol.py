@@ -118,11 +118,11 @@ def lexicalAnalysis(): #* function that generates the lexemes of the code in cod
     lexTable = lexAndSymbolTables.getLexTable()
     keywords = theCode.getKeyWords()
 
-    for word in code: 
-        for keyword, classification in keywords.items():
-            pattern = re.compile(keyword)
-            for match in pattern.finditer(word):
-                lexAndSymbolTables.populateLexTable(match.group(), classification)
+    for word in code: # iterate through every word in the code
+        for keyword, classification in keywords.items(): # iterate through every keyword (and its classification) in the keywords dictionary
+            pattern = re.compile(keyword) # compile the regex for the keyword/s
+            for match in pattern.finditer(word): # find all matches in every line
+                lexAndSymbolTables.populateLexTable(match.group(), classification) # add the matches to the lexemes table
 
 
 
