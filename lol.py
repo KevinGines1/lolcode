@@ -9,14 +9,14 @@ window = Tk()
 window.geometry("1200x750") #widthxheight
 window.title("Ang ganda ni Maam Kat LOLTERPRETER")
     
-    # TODO: add methods to the GUIs
 
 #* -- CLASSES --
 class SourceCode(): # * class for the source code
     # constructor
     def __init__(self):
         self.code = "" # initialize the holder for the entire code
-        self.keywords = {"^HAI$": "Program Delimiter", "KTHXBYE": "Program Delimiter", "BTW":"Comment", "OBTW":"Comment Delimiter", "TLDR":"Comment Delimiter", "I HAS A":"Variable Declaration", "ITZ":"Variable Assignment", "R":"Assignment Operation Keyword", "\"": "String Delimiter", "VISIBLE": "Output Keyword"} # initialize the list of lexemes
+    # TODO: add methods to the GUIs
+        self.keywords = {"^HAI$": "Code Delimiter", "^KTHXBYE$": "Code Delimiter", "^BTW$":"Comment", "^OBTW$":"Comment Delimiter", "^TLDR$":"Comment Delimiter", "I HAS A":"Variable Declaration", "ITZ":"Variable Assignment", "R":"Assignment Operation Keyword", "\"": "String Delimiter", "VISIBLE": "Output Keyword", "[^\"][a-z]+[a-zA-Z0-9_]+": "Variable Identifier", "-?[0-9][0-9]+" : "NUMBR Literal", "-?[0-9]+\.[0-9]+" : "NUMBAR Literal", "\".*\"": "YARN Literal"} # initialize the list of lexemes
 
     def addCode(self, code): # set the code for object
         self.code = code
@@ -107,21 +107,22 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         
 #* -------------
 #* -- FUNCTIONS --
-def generateLexemes(): #* function that generates the lexemes of the code in codeDisplay
-    code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end")
-    # code = code.replace("\n", " ") # replace new lines with spaces so that we only have one delimiter
-    code = code.replace("\t", "") # replace new lines with spaces so that we only have one delimiter
+def lexicalAnalysis(): #* function that generates the lexemes of the code in codeDisplay
+    code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end") # get the code in the display
+
+    code = code.replace("\t", "")
+    # code = code.replace("\n", " ")
     code = code.split("\n")
+    # code = code.split(" ")
     print(code)
     lexTable = lexAndSymbolTables.getLexTable()
-    for word in code:
-        if re.search("^HAI$", word):
-            lexAndSymbolTables.populateLexTable(word, theCode.getKeyWords()["I HAS A"])
-        elif re.search("^VISIBLE", word):
-            lexAndSymbolTables.populateLexTable(word, theCode.getKeyWords()["VISIBLE"])
-        for keyword, classification in theCode.getKeyWords().items():
-            if word==keyword:
-                lexAndSymbolTables.populateLexTable(word, classification)
+    keywords = theCode.getKeyWords()
+
+    for word in code: 
+        for keyword, classification in keywords.items():
+            pattern = re.compile(keyword)
+            for match in pattern.finditer(word):
+                lexAndSymbolTables.populateLexTable(match.group(), classification)
 
 
 
@@ -129,7 +130,7 @@ def generateLexemes(): #* function that generates the lexemes of the code in cod
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     terminal.setDisplay("Compiling...")
-    generateLexemes()
+    lexicalAnalysis()
 
 def readCode(filename): # * function that reads the code in the passed filename
     f = open(filename)
