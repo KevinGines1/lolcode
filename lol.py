@@ -16,7 +16,19 @@ class SourceCode(): # * class for the source code
     def __init__(self):
         self.code = "" # initialize the holder for the entire code
     # TODO: add methods to the GUIs
-        self.keywords = {"^HAI$": "Code Delimiter", "^KTHXBYE$": "Code Delimiter", "^BTW$":"Comment", "^OBTW$":"Comment Delimiter", "^TLDR$":"Comment Delimiter", "I HAS A":"Variable Declaration", "ITZ":"Variable Assignment", "R":"Assignment Operation Keyword", "\"": "String Delimiter", "VISIBLE": "Output Keyword", "[^\"][a-z]+[a-zA-Z0-9_]+": "Variable Identifier", "-?[0-9][0-9]+" : "NUMBR Literal", "-?[0-9]+\.[0-9]+" : "NUMBAR Literal", "\".*\"": "YARN Literal"} # initialize the list of lexemes
+        self.keywords = {"[^\"][a-z]+[a-zA-Z0-9_]+": "Variable Identifier", "[^\"][a-z]+[a-zA-Z0-9]+": "Function Identifier", "[^\"][a-z]+[a-zA-Z0-9_]+": "Loop Identifier",   #Identifiers
+        "-?[0-9][0-9]+" : "NUMBR Literal", "-?[0-9]+\.[0-9]+" : "NUMBAR Literal", "\".*\"": "YARN Literal", "WIN": "TROOF LIteral", "FAIL":"TROOF Literal","NUMBR": "TYPE Literal","NUMBR": "TYPE Literal","NUMBAR": "TYPE Literal","YARN": "TYPE Literal","TROOF": "TYPE Literal",  #Literals
+        "\"": "String Delimiter", "^HAI$": "Code Delimiter", "^KTHXBYE$": "Code Delimiter", "^BTW$":"Comment", "^OBTW$":"Comment Delimiter", "^TLDR$":"Comment Delimiter", #Delimiters 
+        "I HAS A":"Variable Declaration", "ITZ":"Variable Assignment", "R":"Assignment Operation Keyword", #IHAS A to R
+        "SUM OF": "Addition Operator", "DIFF OF": "Substraction Operator", "PRODUKT OF": "Multiplication Operator", "QUOSHUNT OF": "Division Operator", #Sum of to Quoshunt of
+        "MOD OF": "Modulo Operator", "BIGGR OF": "Maximum Operator", "SMALLR OF": "Minimum Operator", #MOD of to Smallr of
+        "BOTH OF": "and operator", "EITHER OF": "or operator", "WON OF": "XOR Operator", "NOT": "Not operator", "ANY OF": "Inifinite arity or operator", "ALL OF": "inifinite arity and operator", #Both of to ALL OF
+        "BOTH SAEM": "Equal comparison Operator", "DIFFRNT": "Not equal comparison operator", "SMOOSH": "Concatenation operator",  #BOTH SAEM to SMOOSH
+        "MAEK": "Explicit type-casting", "A": "Type cast helper", "IS NOW A": "Type cast Specifier", "VISIBLE": "Output Keyword", "GIMMEH": "User input",  #MAEK to GIMMEH
+        "O RLY": "Function Opening Delimiter", "OIC": "Function Closing Delimeter", "YA RLY": "if delimeter", "NO WAI": "else delimeter","MEBBE" : "else-if delimeter", #O RLY to OIC
+        "WTF?":"Case delimeter", "OMG": "Case Specifier", "OMGWTF": "Default Case Specifiier", "IM IN YR": "Loop Opening Delimeter","UPPIN": "Loop increment", "Loop decrement":"",#WTF? to Nerfin
+        "YR": "Loop Variable Specifier", "TIL":"FAIL Loop specifier","WILE": "WIN Loop Specifier", "IM OUTTA YR": "Loop Closing Delimeter" #YR to IM OUTTA YR
+        } # initialize the list of lexemes
 
     def addCode(self, code): # set the code for object
         self.code = code
