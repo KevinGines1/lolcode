@@ -81,6 +81,7 @@ class SourceCode(): # * class for the source code
             "DIFFRNT": "Not equal comparison operator",
             "SMOOSH": "Concatenation operator",  #BOTH SAEM to SMOOSH
         }
+        self.lexemes=[]
 
     def addCode(self, code): # set the code for object
         self.code = code
@@ -99,6 +100,22 @@ class SourceCode(): # * class for the source code
         print("KEYWORDS")
         print(self.keywords)
         print("=====================")
+
+    def getLexemes(self):
+        return self.lexemes
+
+class Lexeme():
+    def __init__(self,mismo):
+        self.mismo=mismo
+        self.type=None
+        self.value= None
+
+    def setType(self,type):
+        self.type=type
+    
+    def export(self, lexAndSymbolTables):
+        lexAndSymbolTables.populateLexTable(self.mismo, self.type)
+    
 
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
     def __init__(self):
@@ -148,7 +165,7 @@ class TablesGUI(): # * class for accessing and displaying the lexemes and symbol
         return self.lexTable
     
     def populateLexTable(self, word, classification):
-        self.lexTable.insert("", "end", values=(str(word), classification))
+        self.lexTable.insert("", "end", values=(str(word), str(classification)))
 
 class TerminalGUI(): # * class for accessing and displaying the "terminal", where the output of the program will be displayed
     def __init__(self):
@@ -182,6 +199,98 @@ def parser(code): #* function that generates the parse tree of the statements
             checkGrammar(lineCode, "print")
 
 
+#Put conditions for vardec , varident and varinint
+def isVardec(code):
+    if re.match("^I HAS A",code):
+        return True
+    return False
+def isVarident(substring):
+    if re.match("^[a-z][a-zA-Z0-9_]*",substring):
+        return True
+    return False
+
+def isVarinit(substring,lexemes):
+    #Substring[0] is varident
+    #Substring[1] is ITZ
+    #Substring[2] nested if
+    tempLexeme=Lexeme(substring[1])
+    tempLexeme.setType("Variable Assignment")
+    tempLexeme.export(lexAndSymbolTables)
+    lexemes.append(tempLexeme)
+    if isLiteral(substring[2],lexemes):
+        return True
+    elif isExpr(substring[2]):
+        return True
+    elif isVarident(substring[2]):
+        return True
+    else:
+        return False
+
+def isLiteral(substring,lexemes):
+    if re.match("^-?[0-9][0-9]*$",substring):
+        tempLexeme = Lexeme(substring)
+        tempLexeme.setType("NUMBR")
+        tempLexeme.export(lexAndSymbolTables)
+        lexemes.append(tempLexeme)
+        
+    elif re.match("^-?[0-9]+\.[0-9]+$", substring):
+        tempLexeme = Lexeme(substring)
+        tempLexeme.setType("NUMBAR")
+        lexemes.append(tempLexeme)
+    elif re.match('^".*"$', substring):
+        tempLexeme = Lexeme(substring)
+        tempLexeme.setType("YARN")
+        lexemes.append(tempLexeme)
+    elif re.match("^WIN$|^FAIL$", substring):
+        tempLexeme = Lexeme(substring)
+        tempLexeme.setType("TROOF")
+        lexemes.append(tempLexeme)
+    elif re.match("^NUMBR$|^NUMBAR$| ^YARN$|^TROOF$", substring):
+        tempLexeme = Lexeme(substring)
+        tempLexeme.setType("TYPE LITERAL")
+        lexemes.append(tempLexeme)
+    else:
+        return False
+    return True
+
+        
+
+# def isExpr(): to do
+
+# def isTypecast(): Bunos
+
+
+def isStatement(code,lexemes):
+    for element in code:
+        if isVardec(element):
+            tempLexeme=Lexeme("I HAS A")
+            tempLexeme.setType("Variable Declaration")
+            lexemes.append(tempLexeme)
+            tempLexeme.export(lexAndSymbolTables)
+
+            element=element.split(" ")
+            tempSubstring= element[3:len(element)]
+            print(tempSubstring)
+
+            if isVarident(tempSubstring[0]):#Unintialized var
+                tempLexeme=Lexeme(tempSubstring[0])
+                tempLexeme.setType("Variable identifier")
+                tempLexeme.export(lexAndSymbolTables)
+                lexemes.append(tempLexeme)
+
+                if len(tempSubstring) > 1 and re.match("^ITZ$",tempSubstring[1]):  #initialized var
+                    isVarinit(tempSubstring,lexemes)
+                        
+    return lexemes
+
+
+            
+        
+
+
+        #elif isOPeration()
+        
+
 
 
 
@@ -197,14 +306,27 @@ def lexicalAnalysis(): #* function that generates the lexemes of the code in cod
 
     lexTable = lexAndSymbolTables.getLexTable()
 
+    lexemes=theCode.getLexemes()
+    tempLexeme=""
     if re.match("^HAI$", code[0]) and re.match("^KTHXBYE$", code[-1]):
+        tempLexeme=Lexeme("HAI")
+        tempLexeme.setType("Program Delimiter")
+        tempLexeme.export(lexAndSymbolTables)
+
+        lexemes.append(tempLexeme)
+        tempLexeme=Lexeme("KTHXBYE")
+        tempLexeme.setType("Program Delimiter")
+        lexemes.append(tempLexeme)
+
         matchFlag = True
     
     if not matchFlag: 
         terminal.setDisplay("Error! Program not found!")
         return 0
 
-    parser(code)
+    lexemes=isStatement(code,lexemes)
+
+
     # keywords = theCode.getKeyWords()
 
     
