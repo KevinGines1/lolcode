@@ -1,0 +1,41 @@
+# pseudocode for lexical and syntax analysis
+
+# load source code
+# read source code per line (since we assume one statement per line) - store in statements_list
+if statements_list[0] does not match to ^HAI$ and statements_list[len(statements_list)-1] does not match to ^KTHXBYE$:
+    error
+else:
+    parser(statements_list[1] to statements_list[len(statements_list)-2])
+
+
+
+parser(<statements>): #refer to project part 2 the first production rule
+    production_rules = {....} # dictionary containing all production rules in project part 2 except for the first one
+    keywords = {} # dictionary containing all the regex for a keyword and its classification
+    for line in statements_list:
+        for keyword in keywords:
+            if line matches with keyword:
+                expand(line, keyword)
+
+
+expand(line, keyword):
+    if keyword == I HAS A: 
+        if line.regex_match((I HAS A)(varident)): 
+            # update lextable and symbol table: uninitialized var
+        elif line.regex_match((I HAS A)(varident)(varident))
+            # update lextable and symbol table: var1 = var2
+        elif line.regex_match((I HAS A)(varident)(literal))
+            # parang kukunin natin si group 3 sa nagmatch na regex
+            expand(line[3], literal)
+        elif line.regex_match((I HAS A)(varident)(expr))
+            # update lextable and symbol table: var1 = evaluate expr
+    elif keyword == literal:
+        if line.regex_match(numbar regex):
+            # update lextable and symbol table: ??
+        elif line.regex_match(number regex):
+            # update lextable and symbol table: ??
+        elif line.regex_match(yarn regex):
+            # update lextable and symbol table: ??
+        elif line.regex_match(troof regex):
+            # update lextable and symbol table: ??
+            

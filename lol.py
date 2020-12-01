@@ -15,20 +15,72 @@ class SourceCode(): # * class for the source code
     # constructor
     def __init__(self):
         self.code = "" # initialize the holder for the entire code
-    # TODO: add methods to the GUIs
-        self.keywords = {"[^\"][a-z]+[a-zA-Z0-9_]+": "Variable Identifier", "[^\"][a-z]+[a-zA-Z0-9]+": "Function Identifier", "[^\"][a-z]+[a-zA-Z0-9_]+": "Loop Identifier",   #Identifiers
-        "-?[0-9][0-9]+" : "NUMBR Literal", "-?[0-9]+\.[0-9]+" : "NUMBAR Literal", "\".*\"": "YARN Literal", "WIN": "TROOF LIteral", "FAIL":"TROOF Literal","NUMBR": "TYPE Literal","NUMBR": "TYPE Literal","NUMBAR": "TYPE Literal","YARN": "TYPE Literal","TROOF": "TYPE Literal",  #Literals
-        "\"": "String Delimiter", "^HAI$": "Code Delimiter", "^KTHXBYE$": "Code Delimiter", "^BTW$":"Comment", "^OBTW$":"Comment Delimiter", "^TLDR$":"Comment Delimiter", #Delimiters 
-        "I HAS A":"Variable Declaration", "ITZ":"Variable Assignment", "R":"Assignment Operation Keyword", #IHAS A to R
-        "SUM OF": "Addition Operator", "DIFF OF": "Substraction Operator", "PRODUKT OF": "Multiplication Operator", "QUOSHUNT OF": "Division Operator", #Sum of to Quoshunt of
-        "MOD OF": "Modulo Operator", "BIGGR OF": "Maximum Operator", "SMALLR OF": "Minimum Operator", #MOD of to Smallr of
-        "BOTH OF": "and operator", "EITHER OF": "or operator", "WON OF": "XOR Operator", "NOT": "Not operator", "ANY OF": "Inifinite arity or operator", "ALL OF": "inifinite arity and operator", #Both of to ALL OF
-        "BOTH SAEM": "Equal comparison Operator", "DIFFRNT": "Not equal comparison operator", "SMOOSH": "Concatenation operator",  #BOTH SAEM to SMOOSH
-        "MAEK": "Explicit type-casting", "A": "Type cast helper", "IS NOW A": "Type cast Specifier", "VISIBLE": "Output Keyword", "GIMMEH": "User input",  #MAEK to GIMMEH
-        "O RLY": "Function Opening Delimiter", "OIC": "Function Closing Delimeter", "YA RLY": "if delimeter", "NO WAI": "else delimeter","MEBBE" : "else-if delimeter", #O RLY to OIC
-        "WTF?":"Case delimeter", "OMG": "Case Specifier", "OMGWTF": "Default Case Specifiier", "IM IN YR": "Loop Opening Delimeter","UPPIN": "Loop increment", "Loop decrement":"",#WTF? to Nerfin
-        "YR": "Loop Variable Specifier", "TIL":"FAIL Loop specifier","WILE": "WIN Loop Specifier", "IM OUTTA YR": "Loop Closing Delimeter" #YR to IM OUTTA YR
-        } # initialize the list of lexemes
+        self.keywords = {\
+            "^HAI$": "Code Delimiter", 
+            "^KTHXBYE$": "Code Delimiter",
+            "^BTW$":"Comment",
+            "^OBTW$":"Comment Delimiter",
+            "^TLDR$":"Comment Delimiter", #Delimiters 
+            "I HAS A":"Variable Declaration",
+            "ITZ":"Variable Assignment",
+            "R":"Assignment Operation Keyword", #IHAS A to R
+            # "MAEK": "Explicit type-casting",
+            # "A": "Type cast helper",
+            # "IS NOW A": "Type cast Specifier",
+            "VISIBLE": "Output Keyword",
+            # "GIMMEH": "User input",  #MAEK to GIMMEH
+            "O RLY": "Function Opening Delimiter",
+            "OIC": "Function Closing Delimeter",
+            "YA RLY": "if delimiter",
+            "NO WAI": "else delimiter",
+            "MEBBE" : "else-if delimeter", #O RLY to OIC
+            "WTF?":"Case delimeter",
+            "OMG": "Case Specifier",
+            "OMGWTF": "Default Case Specifiier",
+            "IM IN YR": "Loop Opening Delimeter",
+            "UPPIN": "Loop increment",
+            "Loop decrement":"",#WTF? to Nerfin
+            "YR": "Loop Variable Specifier",
+            "TIL":"FAIL Loop specifier",
+            "WILE": "WIN Loop Specifier",
+            "IM OUTTA YR": "Loop Closing Delimeter" #YR to IM OUTTA YR
+        }
+        self.literals = {
+            "\"": "String Delimiter",
+            "-?[0-9][0-9]+" : "NUMBR Literal",
+            "-?[0-9]+\.[0-9]+" : "NUMBAR Literal",
+            "\".*\"": "YARN Literal",
+            "WIN": "TROOF LIteral",
+            "FAIL":"TROOF Literal",
+            "NUMBR":"TYPE Literal",
+            "NUMBR": "TYPE Literal",
+            "NUMBAR":"TYPE Literal",
+            "YARN": "TYPE Literal",
+            "TROOF": "TYPE Literal",  #Literals
+        }
+        self.identifiers = {
+            "[^\"][a-z]+[a-zA-Z0-9_]+": "Variable Identifier", 
+            "[^\"][a-z]+[a-zA-Z0-9]+": "Function Identifier",
+             "[^\"][a-z]+[a-zA-Z0-9_]+": "Loop Identifier"
+        }
+        self.operations = {
+            "SUM OF": "Addition Operator", 
+            "DIFF OF": "Substraction Operator",
+            "PRODUKT OF": "Multiplication Operator",
+            "QUOSHUNT OF": "Division Operator", #Sum of to Quoshunt of
+            "MOD OF": "Modulo Operator",
+            "BIGGR OF": "Maximum Operator",
+            "SMALLR OF": "Minimum Operator", #MOD of to Smallr of
+            "BOTH OF": "and operator",
+            "EITHER OF": "or operator",
+            "WON OF": "XOR Operator",
+            "NOT": "Not operator",
+            "ANY OF": "Inifinite arity or operator",
+            "ALL OF": "inifinite arity and operator", #Both of to ALL OF
+            "BOTH SAEM": "Equal comparison Operator",
+            "DIFFRNT": "Not equal comparison operator",
+            "SMOOSH": "Concatenation operator",  #BOTH SAEM to SMOOSH
+        }
 
     def addCode(self, code): # set the code for object
         self.code = code
@@ -119,22 +171,49 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         
 #* -------------
 #* -- FUNCTIONS --
-def lexicalAnalysis(): #* function that generates the lexemes of the code in codeDisplay
-    code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end") # get the code in the display
-
-    code = code.replace("\t", "")
-    # code = code.replace("\n", " ")
-    code = code.split("\n")
-    # code = code.split(" ")
-    print(code)
-    lexTable = lexAndSymbolTables.getLexTable()
+def isKeyWord(word):
     keywords = theCode.getKeyWords()
 
-    for word in code: # iterate through every word in the code
-        for keyword, classification in keywords.items(): # iterate through every keyword (and its classification) in the keywords dictionary
-            pattern = re.compile(keyword) # compile the regex for the keyword/s
-            for match in pattern.finditer(word): # find all matches in every line
-                lexAndSymbolTables.populateLexTable(match.group(), classification) # add the matches to the lexemes table
+def parser(code): #* function that generates the parse tree of the statements
+    keywords = theCode.getKeyWords()
+    # iterate thryoughj every element in code
+    for lineOfCode in code:
+        if re.match(keywords["^VISIBLE"], lineOfCode):
+            checkGrammar(lineCode, "print")
+
+
+
+
+
+def lexicalAnalysis(): #* function that generates the lexemes of the code in codeDisplay
+    matchFlag = False
+    code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end") # get the code in the display
+
+    # print(code)
+    code = code.replace("\t", "")
+    code = code.split("\n")
+    code.pop() # ! 
+    print(code)
+
+    lexTable = lexAndSymbolTables.getLexTable()
+
+    if re.match("^HAI$", code[0]) and re.match("^KTHXBYE$", code[-1]):
+        matchFlag = True
+    
+    if not matchFlag: 
+        terminal.setDisplay("Error! Program not found!")
+        return 0
+
+    parser(code)
+    # keywords = theCode.getKeyWords()
+
+    
+
+    # for word in code: # iterate through every word in the code 
+    #     for keyword, classification in keywords.items(): # iterate through every keyword (and its classification) in the keywords dictionary
+    #         pattern = re.compile(keyword) # compile the regex for the keyword/s
+    #         for match in pattern.finditer(word): # find all matches in every line
+                # lexAndSymbolTables.populateLexTable(match.group(), classification) # add the matches to the lexemes table
 
 
 
@@ -146,6 +225,7 @@ def executeCode(): #* function that executes the loaded code
 
 def readCode(filename): # * function that reads the code in the passed filename
     f = open(filename)
+    # code = f.readlines() # read the code inside the text file
     code = f.read() # read the code inside the text file
     theCode.addCode(code) # add the code to the initialized object
     # theCode.showMe()
