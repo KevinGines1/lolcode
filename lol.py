@@ -538,6 +538,7 @@ def lexicalAnalysis():
     fxnInitActive = False # for function identifier
     single_line_comment = False # when true, all characters are part of a single line comment
     multi_line_comment = False # when true, all characters are part of a multi-line comment
+    switch_case_active = False # ! if this is true, will collect all the cases in a switch case
  
     #* temporary holders
     multi_line_comment_actual = "" # temporary holder for a multi-line comment
