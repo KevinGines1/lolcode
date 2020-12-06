@@ -30,17 +30,17 @@ class SourceCode(): # * class for the source code
             #^ "IS NOW A": "Type cast Specifier",
             "^VISIBLE$": "Output Keyword",
             "^GIMMEH$": "User input",  #MAEK to GIMMEH
-            "^O RLY$": "Function Opening Delimiter",
-            "^OI$C": "Function Closing Delimeter",
-            "^YA RLY$": "if delimiter",
-            "^NO WAI$": "else delimiter",
-            "^MEBB$E" : "else-if delimeter", #O RLY to OIC,
-            "^IT$" : "For Comparison in a Switch Case",
+            "^O RLY\?$": "IF-ELSE Statement Opening Delimiter",
+            #!  "^OI$C": "Function Closing Delimeter", 
+            "^YA RLY$": "IF TRUE delimiter",
+            "^NO WAI$": "ELSE delimiter",
+            "^MEBB$E" : "ELSE-IF delimeter", #O RLY to OIC,
+            "^IT$" : "Implicit Variable",
             "^WTF\?$":"Switch Case Start Delimiter",
             "^OMG$": "Case Specifier",
             "^OMGWTF$": "Default Switch Case Specifiier",
             "^GTFO$" : "Break Statement",
-            "^OIC$" : "Switch Case End Delimiter",
+            "^OIC$" : "Switch Case/IF-ELSE End Delimiter",
             "^IM IN YR$": "Loop Opening Delimeter",
             "^UPPIN$": "Loop increment",
             "^Loop decrement$":"",#WTF? to Nerfin
@@ -51,8 +51,8 @@ class SourceCode(): # * class for the source code
         }
         self.literals = {
             "\"": "String Delimiter",
-            "-?[0-9][0-9]*" : "NUMBR Literal",
-            "-?[0-9]*\.[0-9]+" : "NUMBAR Literal",
+            "^-?[0-9][0-9]*$" : "NUMBR Literal",
+            "^-?[0-9]*\.[0-9]+$" : "NUMBAR Literal",
             "\".*\"": "YARN Literal",
             "^WIN$": "TROOF LIteral",
             "^FAIL$":"TROOF Literal",
@@ -62,10 +62,10 @@ class SourceCode(): # * class for the source code
             "^TROOF$": "TYPE Literal",  #Literals
         }
         self.identifiers = {
-            "[a-z]+[a-zA-Z0-9_]+": "Identifier", 
-            # [a-z]+[a-zA-Z0-9_]+": "Variable Identifier", 
-            # "[a-z]+[a-zA-Z0-9_]+": "Function Identifier", 
-            # "[a-z]+[a-zA-Z0-9_]+": "Loop Identifier", 
+            "[a-z]+[a-zA-Z0-9_]*": "Identifier", 
+            # [a-z]+[a-zA-Z0-9_]*": "Variable Identifier", 
+            # "[a-z]+[a-zA-Z0-9_]*": "Function Identifier", 
+            # "[a-z]+[a-zA-Z0-9_]*": "Loop Identifier", 
         }
         self.operations = {
             "^SUM OF$": "Addition Operator", 
@@ -538,7 +538,7 @@ def lexicalAnalysis():
     fxnInitActive = False # for function identifier
     single_line_comment = False # when true, all characters are part of a single line comment
     multi_line_comment = False # when true, all characters are part of a multi-line comment
-    switch_case_active = False # ! if this is true, will collect all the cases in a switch case
+    switch_case_active = False # ! not sure if this will be useful
  
     #* temporary holders
     multi_line_comment_actual = "" # temporary holder for a multi-line comment
