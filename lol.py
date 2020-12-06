@@ -34,10 +34,13 @@ class SourceCode(): # * class for the source code
             "^OI$C": "Function Closing Delimeter",
             "^YA RLY$": "if delimiter",
             "^NO WAI$": "else delimiter",
-            "^MEBB$E" : "else-if delimeter", #O RLY to OIC
-            "^WTF?$":"Case delimeter",
+            "^MEBB$E" : "else-if delimeter", #O RLY to OIC,
+            "^IT$" : "For Comparison in a Switch Case",
+            "^WTF\?$":"Switch Case Start Delimiter",
             "^OMG$": "Case Specifier",
-            "^OMGWTF$": "Default Case Specifiier",
+            "^OMGWTF$": "Default Switch Case Specifiier",
+            "^GTFO$" : "Break Statement",
+            "^OIC$" : "Switch Case End Delimiter",
             "^IM IN YR$": "Loop Opening Delimeter",
             "^UPPIN$": "Loop increment",
             "^Loop decrement$":"",#WTF? to Nerfin
@@ -51,13 +54,12 @@ class SourceCode(): # * class for the source code
             "-?[0-9][0-9]*" : "NUMBR Literal",
             "-?[0-9]*\.[0-9]+" : "NUMBAR Literal",
             "\".*\"": "YARN Literal",
-            "WIN": "TROOF LIteral",
-            "FAIL":"TROOF Literal",
-            "NUMBR":"TYPE Literal",
-            "NUMBR": "TYPE Literal",
-            "NUMBAR":"TYPE Literal",
-            "YARN": "TYPE Literal",
-            "TROOF": "TYPE Literal",  #Literals
+            "^WIN$": "TROOF LIteral",
+            "^FAIL$":"TROOF Literal",
+            "^NUMBR$":"TYPE Literal",
+            "^NUMBAR$":"TYPE Literal",
+            "^YARN$": "TYPE Literal",
+            "^TROOF$": "TYPE Literal",  #Literals
         }
         self.identifiers = {
             "[a-z]+[a-zA-Z0-9_]+": "Identifier", 
@@ -485,6 +487,9 @@ def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes):
 
     for keyword in keywords.keys():
         if re.match(keyword, word):
+            if word == "WTF?":
+                raw_string = r"{}".format(word)
+                print(raw_string)
             makeLexeme(word, keywords[keyword], lexemes)
             return True
     
@@ -527,16 +532,16 @@ def lexicalAnalysis():
     lexemes = theCode.getLexemes()
     
     #* flags
-    stringDelimiterActive = False
-    varInitActive = False
-    loopInitActive = False
-    fxnInitActive = False
-    single_line_comment = False
-    multi_line_comment = False
-
+    stringDelimiterActive = False # when true, all characters are part of a string comment
+    varInitActive = False # when true, all characters read will become a variable identifer
+    loopInitActive = False # for loop identifier
+    fxnInitActive = False # for function identifier
+    single_line_comment = False # when true, all characters are part of a single line comment
+    multi_line_comment = False # when true, all characters are part of a multi-line comment
+ 
     #* temporary holders
-    multi_line_comment_actual = ""
-    scanned_word = ""
+    multi_line_comment_actual = "" # temporary holder for a multi-line comment
+    scanned_word = "" # temporary holder for a scanned word
 
     for character in code:
         if character == " " and not stringDelimiterActive and not single_line_comment and not multi_line_comment:
