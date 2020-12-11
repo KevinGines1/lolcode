@@ -544,7 +544,7 @@ def lexicalAnalysis():
     multi_line_comment_actual = "" # temporary holder for a multi-line comment
     scanned_word = "" # temporary holder for a scanned word
 
-    for character in code:
+    for character in code: # iterate through every character in the source code
         if character == " " and not stringDelimiterActive and not single_line_comment and not multi_line_comment:
             print("<SPACE>")
             print(scanned_word)
@@ -588,6 +588,8 @@ def lexicalAnalysis():
                 clear = True
             else:
                 clear = analyzeKeyword(scanned_word, keywords, literals, identifiers, operations, lexemes)
+            
+            makeLexeme("\\n", "Line Break", lexemes)
 
 
             if clear:
