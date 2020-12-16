@@ -16,8 +16,8 @@ class SourceCode(): # * class for the source code
     def __init__(self):
         self.code = "" # initialize the holder for the entire code
         self.keywords = {
-            "^HAI$": "Code Delimiter", 
-            "^KTHXBYE$": "Code Delimiter",
+            "^HAI$": "Code Start Delimiter", 
+            "^KTHXBYE$": "Code End Delimiter",
             "^BTW$":"Single Line Comment Delimiter",
             "^OBTW$":"Multiline Comment Delimiter",
             "^TLDR$":"Comment Delimiter", #Delimiters 
@@ -31,7 +31,7 @@ class SourceCode(): # * class for the source code
             "^VISIBLE$": "Output Keyword",
             "^GIMMEH$": "User input",  #MAEK to GIMMEH
             "^O RLY\?$": "IF-ELSE Statement Opening Delimiter",
-            #!  "^OI$C": "Function Closing Delimeter", 
+            #!  "^OI$C": "Function Closing Delimiter", 
             "^YA RLY$": "IF TRUE delimiter",
             "^NO WAI$": "ELSE delimiter",
             "^MEBB$E" : "ELSE-IF delimeter", #O RLY to OIC,
@@ -43,18 +43,19 @@ class SourceCode(): # * class for the source code
             "^OIC$" : "Switch Case/IF-ELSE End Delimiter",
             "^IM IN YR$": "Loop Opening Delimeter",
             "^UPPIN$": "Loop increment",
-            "^Loop decrement$":"",#WTF? to Nerfin
+            "^NERFIN$":"Loop decrement",#WTF? to Nerfin
             "^YR$": "Loop Variable Specifier",
             "^TIL$":"FAIL Loop specifier",
             "^WILE$": "WIN Loop Specifier",
-            "^IM OUTTA YR$": "Loop Closing Delimeter" #YR to IM OUTTA YR
+            "^IM OUTTA YR$": "Loop Closing Delimiter", #YR to IM OUTTA YR
+            "^MKAY$" : "End of Boolean Statement"
         }
         self.literals = {
             "\"": "String Delimiter",
             "^-?[0-9][0-9]*$" : "NUMBR Literal",
             "^-?[0-9]*\.[0-9]+$" : "NUMBAR Literal",
             "\".*\"": "YARN Literal",
-            "^WIN$": "TROOF LIteral",
+            "^WIN$": "TROOF Literal",
             "^FAIL$":"TROOF Literal",
             "^NUMBR$":"TYPE Literal",
             "^NUMBAR$":"TYPE Literal",
@@ -68,19 +69,19 @@ class SourceCode(): # * class for the source code
             # "[a-z]+[a-zA-Z0-9_]*": "Loop Identifier", 
         }
         self.operations = {
-            "^SUM OF$": "Addition Operator", 
-            "^DIFF OF$": "Substraction Operator",
-            "^PRODUKT OF$": "Multiplication Operator",
+            "^SUM OF$": "Addition Operator" , 
+            "^DIFF OF$": "Substraction Operator",  
+            "^PRODUKT OF$": "Multiplication Operator", 
             "^QUOSHUNT OF$": "Division Operator", #Sum of to Quoshunt of
-            "^MOD OF$": "Modulo Operator",
-            "^BIGGR OF$": "Maximum Operator",
-            "^SMALLR OF$": "Minimum Operator", #MOD of to Smallr of
-            "^BOTH OF$": "and operator",
+            "^MOD OF$": "Modulo Operator", 
+            "^BIGGR OF$": "Maximum Operator", 
+            "^SMALLR OF$": "Minimum Operator",  #MOD of to Smallr of
+            "^BOTH OF$": "and operator", 
             "^EITHER OF$": "or operator",
             "^WON OF$": "XOR Operator",
             "^NOT$": "Not operator",
-            "^ANY OF$": "Inifinite arity or operator",
-            "^ALL OF$": "inifinite arity and operator", #Both of to ALL OF
+            "^ANY OF$": "Infiinite arity or operator", #!
+            "^ALL OF$": "Infinite arity and operator",  #! #Both of to ALL OF
             "^BOTH SAEM$": "Equal comparison Operator",
             "^DIFFRINT$": "Not equal comparison operator",
             "^SMOOSH$": "Concatenation operator",  #BOTH SAEM to SMOOSH
@@ -129,8 +130,19 @@ class Lexeme():
     
     def export(self, lexAndSymbolTables):
         lexAndSymbolTables.populateLexTable(self.mismo, self.type)
-    
 
+    def getActual(self):
+        return self.mismo
+
+    def getType(self):
+        return self.type
+    
+    def getValue(self):
+        return self.value
+
+    def setValue(self, value):
+        self.value = value
+    
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
     def __init__(self):
         # select button
@@ -472,12 +484,12 @@ def isVarinit(substring, lexemes):
 
 
 
-# * ---------------------------------------------------------------------------------------------------- GENERAL FXNS
-def makeLexeme(mismo,type,lexemes): #* function that constructs a lexeme object for a passed string
-    tempLexeme = Lexeme(mismo)
-    tempLexeme.setType(type)
+# * ---------------------------------------------------------------------------------------------------- LEXICAL ANALYSIS
+def makeLexeme(mismo,lex_type,lexemes): #* function that constructs a lexeme object for a passed string
+    tempLexeme = Lexeme(mismo) # mismong string
+    tempLexeme.setType(lex_type) # type of lexeme
     lexemes.append(tempLexeme)
-    tempLexeme.export(lexAndSymbolTables)
+    tempLexeme.export(lexAndSymbolTables) # add the lexeme to the table in the GUI
     
 def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes):
     print("CHECKING:", word)
@@ -561,7 +573,7 @@ def lexicalAnalysis():
                         makeLexeme(scanned_word, "Loop Identifier", lexemes)
                         loopInitActive = False
                     elif fxnInitActive:
-                        makeLexem(scanned_word, "Function Identifier", lexemes)
+                        makeLexeme(scanned_word, "Function Identifier", lexemes)
                         fxnInitActive = False
                     clear = True
             
@@ -625,11 +637,181 @@ def lexicalAnalysis():
         else:
             scanned_word = scanned_word + character
 
+# * ---------------------------------------------------------------------------------------------------------------------
+# * ------------------------------------------------------------------------------------------------------SYNTAX ANALYSIS
+def syntaxAnalysis(): # * function that executes syntax analysis
+    print("SYNTAX ANALYSIS")
+    lexemes = theCode.getLexemes()
+
+    statements = []
+    multiline_comment_active = False
+    statementHolder = [] # temporary holder for multiple lexemes that should form a statement
+    clearStatementHolder = False
+    printFlag = False
+    for lexeme in lexemes:
+        # print("LEXEME: ", lexeme.mismo, "->", lexeme.type)
+        if lexeme.getType() == "Single Line Delimiter" and multiLine_comment_active == False:
+            continue # if single line comment, proceed to next lexeme
+        elif lexeme.getType() == "Multiline Comment Delimiter":
+            multiLine_comment_active = True
+            continue
+        elif multiline_comment_active == True:
+            continue
+        elif lexeme.getType() == "Comment Delimiter":
+            multiline_comment_active = False
+            continue
+        elif lexeme.getType() == "Code Start Delimiter":
+            print("START OF PROGRAM FOUND!")
+        elif lexeme.getType() == "Code End Delimiter":
+            print("END OF PROGRAM FOUND!")
+            break # ! not sure about this pero i think it is 
+        else:
+            print("Checking kung statement")
+            if lexeme.getType() == "Output Keyword" and printFlag == False:
+                printFlag = True
+                statementHolder.append(lexeme)
+            elif printFlag == True and clearStatementHolder == False:
+                if visibleOperand(lexeme):
+                     statementHolder.append(lexeme)
+                elif lexeme.getType() == "Line Break":
+                    statementHolder.append(lexeme)
+                    clearStatementHolder = True
+
+
+            if clearStatementHolder:
+                statements.append(statementHolder)
+                statementHolder = []
+                
+
+# def isStatement(listOfLexemes): # * function that checks if the list of lexemes form a statement
+
+def visibleOperand(lexeme): # * for visible operands only
+
+    if isLiteral(lexeme):
+        return True
+    elif isExpr(lexeme):
+        return True
+    elif lexeme.getType() == "Variable Identifier":
+        return True
+    else:
+        return False
+
+def isExpr(lexeme):
+    # check if arithmetic
+    if isArithmetic(lexeme):
+        return True
+    # check if boolean
+    elif isBoolean(lexeme):
+        return True
+    # check if comparison
+    elif isComparison(lexeme):
+        return True
+    return False
+    
+def isArithmetic(lexeme):
+    operation1 = theCode.getOperations().keys()
+
+    # for index in range(7): # operation 1
+    #     if lexeme.getActual() == operation1[index]:
+    #         return True
+    if lexeme.getActual() in operation1:
+        return True
+
+    if isOperand(lexeme): # operand
+        return True
+    elif lexeme.getType() == "Operand Separator":
+        return True
+    return False
+
+
+def isBoolean(lexeme):
+
+    #check if first type of boolean
+    booloperation1 = theCode.getOperations()[7:10]
+
+    for operation in booloperation1: # operation 1
+        if lexeme.getActual() == operation:
+            return True
+
+    if isBoolOperand1(lexeme): # operand
+        return True
+    elif lexeme.getType() == "Operand Separator":
+        return True
+
+    #check if second type of boolean
+    if isUnary(lexeme):
+        return True
+
+    # check if third type of boolean
+    if isBoolean2(lexeme):
+        return True
+    return False
+
+def isBoolean2(lexeme):
+    booloperation2 = theCode.getOperations()[11:13]
+
+    for operation in booloperation2: # operation 1
+        if lexeme.getActual() == operation:
+            return True
+
+    if lexeme.getType() == "Variable Identifier":
+        return True
+    elif lexeme.getType() == "TROOF Literal":
+        return True
+    elif lexeme.getType() == "End of Boolean Statement":
+        return True
+    elif lexeme.getType() == "Operand Separator":
+        return True
+    return False
+
+    # ! incomplete pa 
+    # ! booleanf2only
+    
+
+def isBoolOperand1(lexeme):
+    if lexeme.getType() == "Variable Identifier":
+        return True
+    elif lexeme.getType() == "TROOF Literal":
+        return True
+    elif isBoolean(lexeme):
+        return True
+    return False
+
+def isOperand(lexeme):
+    # * pwede ata ipagsama ? gamit ng or statement? 
+    if lexeme.getType() == "Variable Identifier":
+        return True
+    elif lexeme.getType() == "NUMBR Literal":
+        return True
+    elif lexeme.getType() == "NUMBAR Literal":
+        return True
+    elif isArithmetic(lexeme):
+        return True
+    return False
+
+def isLiteral(lexeme):
+    literals = theCode.getLiterals()
+    values = literals.values()
+
+    for value in values:
+        if lexeme.getType() == value:
+            return True
+    return False
+
+def isUnary(lexeme):
+    lexemeType = lexeme.getType()
+    if lexemeType == "Loop increment" or lexemeType == "Loop decrement" or lexemeType == "Not operator":
+        return True
+    return False 
+
+
+# * ---------------------------------------------------------------------------------------------------------------------
 
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     terminal.setDisplay("Compiling...")
     lexicalAnalysis()
+    syntaxAnalysis()
 
 def readCode(filename): # * function that reads the code in the passed filename
     f = open(filename)
