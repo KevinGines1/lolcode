@@ -143,6 +143,174 @@ class Lexeme():
     def setValue(self, value):
         self.value = value
     
+
+class Program():
+    def __init__(self,lexemes,hai_lexeme,kthxbye_lexeme):
+        self.HAI=hai_lexeme
+        self.KTHXBYE=kthxbye_lexeme
+        self.statement=None
+        self.linebreak=None
+
+
+#lookahead method
+
+        
+    
+class Statement():
+    def __init__(self,lexemes):
+        self.print= None
+        self.vardec=None
+        self.input=None
+        self.assignment=None
+        self.ifelse=None
+        self.switchcase=None
+        self.loop=None
+        self.function=None
+        self.functioncall=None
+        self.statement=None
+        self.linebreak = None
+
+class Print():
+    def __init__(self,lexemes,visible_lexeme):
+        self.left_operand=visible_lexeme
+        self.right_operand=None  #may branch
+        self.linebreak = None
+
+class VisibleOperand():
+    def __init__(self,lexemes):
+        self.yarn=None
+        self.expr=None
+        self.literal=None
+        self.varident= None
+        self.linebreak=None
+
+class Expr():
+    def __init__(self,expr_lexeme):
+        self.expr=expr_lexeme
+
+class Literal():
+    def __init__(self,literal_lexeme):
+        self.literal=literal_lexeme
+
+class Vardec():
+    def __init__(self, lexemes,vardec_lexeme):
+        self.left_operand=vardec_lexeme
+        self.varinit = None
+
+
+class Varinit():
+    def __init__(self, lexemes,varinit_lexeme):
+        self.left_operand = varinit_lexeme
+        self.literal=None
+        self.expr=None
+        self.typecast=None  #bonus
+        self.varident=None
+
+class Input():  #* how to implement 
+    def __init__(self,gimmeh_lexeme):
+        self.gimmeh=gimmeh_lexeme
+
+class Assignment():
+    def __init__(self,lexemes,assignment_lexeme,R_lexeme):
+        self.left_operand=assignment_lexeme
+        self.middle_operand=R_lexeme
+        self.right_operand=None  #typecast,varident,lietral,expr,concatenation
+#! class for concatenation
+
+class Ifelse():
+    def __init__(self,lexemes,orly_lexeme,oic_lexeme):
+        self.ifcond=None
+        self.ifclause=None
+        self.elseclause=None
+        self.oic=oic_lexeme
+        self.mebbeclause=None
+class Ifcond():
+    def __init__(self,lexemes):
+        self.boolean=None
+        self.comparison=None
+
+#! make booleans
+
+class Comparison():
+    def __init__(self,lexemes):
+        self.compoperator=None
+        self.operand=None
+        self.operand2=None
+        self.an=None  #* reqd AN
+
+class Compoperator():
+    def __init__(self, lexemes):
+        self.left_operand= None   #BOTH SAEM  | DIFFRNT
+
+class Operand():
+    def __init__(self, lexemes):
+        self.leaf_operand= None # varident, numbr, numbr, arithmetic 
+     
+class Arithmetic():
+    def __init__(self, lexemes):
+        self.operation1 = None
+        self.an= None
+        self.left_operand= None
+        self.right_operand= None
+class Operation1():
+    def __init__(self,lexemes):
+        self.leaf_operand=None #* SUM OFF | DIFF OF etc
+
+class Operation2():
+    def __init__(self,lexemes):
+        self.leaf_operand=None #* BIGGR OF SMLLR OF 
+
+class IfClause():
+    def __init__(self,lexemes,yarly_lexeme):
+        self.left_operand=yarly_lexeme
+        self.right_operand=None  #Code Block
+
+class ElseClause():
+    def __init__(self,lexemes,orly_lexeme):
+        self.left_operand=orly_lexeme
+        self.right_operand=None  #Code Block
+
+#! class MebbeClause
+
+class SwitchCase():
+    def __init__(self,lexemes,wtf_lexeme,oic_lexeme):
+        self.left_operand=wtf_lexeme
+        self.right_operand=oic_lexeme
+        self.case=None
+
+
+#! try implementation
+class Case():
+    def __init__(self,lexemes):
+        self.leaf_operand=None
+        self.literal=None
+        self.codeblock=None
+        self.middle_operand=None     #GTFO
+        self.right_operand=None     #case
+
+class CodeBlock():
+    def __init__(self, lexemes):
+        self.print = None
+        self.vardec = None
+        self.expr = None
+        self.assignment = None
+        self.ifelse = None
+        self.switchcase = None
+        self.loop = None
+        self.functioncall = None
+        self.codeblock = None
+        self.linebreak = None
+
+#!class functions, function call etc
+
+
+
+
+
+
+
+
+
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
     def __init__(self):
         # select button
