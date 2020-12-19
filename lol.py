@@ -76,9 +76,9 @@ class SourceCode(): # * class for the source code
             "^MOD OF$": "Modulo Operator", 
             "^BIGGR OF$": "Maximum Operator", 
             "^SMALLR OF$": "Minimum Operator",  #MOD of to Smallr of
-            "^BOTH OF$": "and operator", 
-            "^EITHER OF$": "or operator",
-            "^WON OF$": "XOR Operator",
+            "^BOTH OF$": "and operator", #!
+            "^EITHER OF$": "or operator",#!
+            "^WON OF$": "XOR Operator",#!
             "^NOT$": "Not operator",
             "^ANY OF$": "Infiinite arity or operator", #!
             "^ALL OF$": "Infinite arity and operator",  #! #Both of to ALL OF
@@ -148,16 +148,40 @@ class Program():
     def __init__(self,lexemes,hai_lexeme,kthxbye_lexeme):
         self.HAI=hai_lexeme
         self.KTHXBYE=kthxbye_lexeme
-        self.statement=None
-        self.linebreak=None
+        self.statement=[]
+        # self.linebreak=None
 
+    def lookAhead(self, lexemes):
+        statementHolder = []
+        multiline_comment_active = False
+        for lexeme in lexemes:
+            if lexeme.getType() == "Single Line Delimiter" and multiLine_comment_active == False:
+                continue # if single line comment, proceed to next lexeme
+            elif lexeme.getType() == "Multiline Comment Delimiter":
+                multiline_comment_active = True
+                continue
+            elif multiline_comment_active:
+                continue
+            elif lexeme.getType() == "Comment Delimiter":
+                multiline_comment_active = False
+                continue
+            elif lexeme.getType() != "Line Break":
+                statementHolder.append(lexeme)
+            elif lexeme.getType() == "Line Break":
+                # statementHolder.append(lexeme) 
+                self.statement.append(statementHolder)
+                statementHolder = []
+
+    def getStatements(self):
+        return self.statement
 
 #lookahead method
 
         
     
 class Statement():
-    def __init__(self,lexemes):
+    def __init__(self):
+        #! take note of multiple instances of the same statement
         self.print= None
         self.vardec=None
         self.input=None
@@ -170,51 +194,209 @@ class Statement():
         self.statement=None
         self.linebreak = None
 
+    def lookAhead(self, statements):
+        statementHolder = []
+        multiline_comment_active = False
+        printFlag = False
+        ifCondObj = None
+        # TODO create if else flag for multiple lines kasi ung if else
+        #! take note of comments
+        #! take note of the order of the statements
+        for statement in statements:
+            for lexeme in statement: 
+                if lexeme.getType() == "Output Keyword": #* PRINT
+                    printObj = Print()
+                    printObj.lookAhead(statement)
+                    self.print = printObj
+                    # self.print.append(statement)
+                elif lexeme.getType() == "Variable Declaration": #* VAR DEC
+                    vardecObj = Vardec()
+                    vardecObj.lookAhead(statement)
+                    self.vardec = vardecObj
+                elif lexeme.getType() == "User input": #* GIMMEH
+                    inputObj = Input()
+                    inputObj.lookAhead(statement)
+                    self.input = inputObj
+                elif lexeme.getType() == "Variable Identifier": #* ASSIGNMENT
+                    assignObj = Assignment()
+                    assignObj.lookAhead(statement)
+                    self.input = assignObj
+                elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"]: #* IF CONDITION
+                    ifCondObj = Ifcond()
+                    ifCondObj.lookAhead(statement)
+                    self.input = assignObj
+                elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter": #* IF STATEMENT
+                    #TODO IF-ELSE na obj
+                    #TODO IF-ELSE na obj.setIfCond(ifCondObj)
+                    #TODO IF-ELSE na obj.lookAhead
+
+
+
+
+
 class Print():
-    def __init__(self,lexemes,visible_lexeme):
-        self.left_operand=visible_lexeme
-        self.right_operand=None  #may branch
+    def __init__(self):
+        self.left_operand=None
+        self.right_operand=[]  #may branch
         self.linebreak = None
 
+    #! take note of comments
+    def lookAhead(self, statement):
+        operandHolder = []
+        for lexeme in statement:
+            if lexeme.getType()=="Output Keyword":
+                self.left_operand = lexeme
+            else:
+                operandHolder.append(lexemes)
+
+        visibleOperandObj = VisibleOperand()
+        visibleOperandObj.lookAhead(operandHolder)
+        self.right_operand = visibleOperandObj
+
 class VisibleOperand():
-    def __init__(self,lexemes):
-        self.yarn=None
+    def __init__(self):
+        # self.yarn=None
         self.expr=None
         self.literal=None
         self.varident= None
         self.linebreak=None
 
+    # ! take note order of the operands
+    def lookAhead(self, listOfLexemes):
+        string_delimiter_flag = False
+        literalObj = None
+        exprObj = None
+        expr_active = False
+        expr_holder = []
+        for lexeme in listOfLexemes:
+            if lexeme.getType()=="String Delimiter" and string_delimiter_flag == False:
+                string_delimiter_flag = True
+                literalObj = Literal()
+            elif string_delimiter_flag:
+                self.literal = literalObj.setValue(lexeme)
+            elif lexeme.getType()=="String Delimiter" and string_delimiter_flag:
+                string_delimiter_flag = False
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
+                literalObj = Literal()
+                self.literal = literalObj.setValue(lexeme)
+            elif lexeme.getType() == "Variable Identifier":
+                self.varident = lexeme
+            elif expr_active:
+                expr_holder.append(lexeme)
+            else: 
+                expr_active = True
+                exprObj = Expr()
+        if expr_active:
+            exprObj.setExpr(expr_holder) # !
+
+# TODO : expr
 class Expr():
-    def __init__(self,expr_lexeme):
-        self.expr=expr_lexeme
+    def __init__(self):
+        self.expr = None
+
+    def setExpr(self, expr):
+        self.expr = expr
 
 class Literal():
-    def __init__(self,literal_lexeme):
-        self.literal=literal_lexeme
+    def __init__(self):
+        self.literal=None
+
+    def setValue(self, value):
+        self.literal = value
 
 class Vardec():
-    def __init__(self, lexemes,vardec_lexeme):
-        self.left_operand=vardec_lexeme
+    def __init__(self):
+        self.left_operand=None
+        self.varident = None
         self.varinit = None
 
+    #! take note of comments
+    #! take note of variable identifier and identifier
+    def lookAhead(self, statement):
+        statementHolder = []
+        varInitHolder = []
+        for lexeme in statement:
+            if lexeme.getType()=="Variable Declaration":
+                self.left_operand = lexeme
+            elif lexeme.getType() == "Variable Identifier":
+                self.varident = lexeme 
+            elif lexeme.getType() != "Identifier":
+                varInitHolder.append(lexeme)
 
+        varInitObj = Varinit()
+        varInitObj.lookAhead(varInitHolder)
+        self.varinit = varInitObj
+        
 class Varinit():
-    def __init__(self, lexemes,varinit_lexeme):
-        self.left_operand = varinit_lexeme
+    def __init__(self):
+        self.left_operand = None # ITZ
         self.literal=None
         self.expr=None
         self.typecast=None  #bonus
         self.varident=None
 
+        # ! take note order of the operands
+    def lookAhead(self, listOfLexemes): # ITZ operand
+        literalObj = None
+        exprObj = None
+        expr_active = False
+        expr_holder = []
+        for lexeme in listOfLexemes:
+            if lexeme.getType()=="Variable Assignment":
+                self.left_operand = lexeme
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
+                literalObj = Literal()
+                self.literal = literalObj.setValue(lexeme)
+            elif lexeme.getType() == "Variable Identifier":
+                self.varident = lexeme
+            elif expr_active:
+                expr_holder.append(lexeme)
+            else: 
+                expr_active = True
+                exprObj = Expr()
+        if expr_active:
+            exprObj.setExpr(expr_holder) # !
+    
 class Input():  #* how to implement 
-    def __init__(self,gimmeh_lexeme):
-        self.gimmeh=gimmeh_lexeme
+    def __init__(self):
+        self.gimmeh = None
+        self.varident = None
+    
+    def lookAhead(self, statement):
+        for lexeme in statement:
+            if lexeme.getType() == "User input":
+                self.gimmeh = lexeme
+            elif lexeme.getType() == "Variable Identifier":
+                self.varident = lexeme
 
 class Assignment():
-    def __init__(self,lexemes,assignment_lexeme,R_lexeme):
-        self.left_operand=assignment_lexeme
-        self.middle_operand=R_lexeme
-        self.right_operand=None  #typecast,varident,lietral,expr,concatenation
+    def __init__(self):
+        self.left_operand= None
+        self.middle_operand= None
+        self.right_operand= None  #typecast,varident,lietral,expr,concatenation
+
+    def lookAhead(self, statement):
+        exprObj = None
+        expr_active = False
+        expr_holder = []
+
+        for lexeme in statement:
+            if lexeme.getType() == "Variable Identifier" and self.middle_operand == None:
+                self.left_operand = lexeme
+            elif lexeme.getType() == "Assignment Operation Keyword":
+                self.middle_operand = lexeme    
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
+                self.right_operand = lexeme
+            elif lexeme.getType() == "Variable Identifier" and self.middle_operand != None:
+                self.right_operand = lexeme
+            elif expr_active:
+                expr_holder.append(lexeme)
+            else: 
+                expr_active = True
+                exprObj = Expr()
+        if expr_active:
+            exprObj.setExpr(expr_holder) # !
+            
 #! class for concatenation
 
 class Ifelse():
@@ -224,10 +406,29 @@ class Ifelse():
         self.elseclause=None
         self.oic=oic_lexeme
         self.mebbeclause=None
+
+
 class Ifcond():
     def __init__(self,lexemes):
         self.boolean=None
         self.comparison=None
+    
+    def lookAhead(self, statement):
+        exprObj = None
+        expr_active = False
+        expr_holder = []
+
+        for lexeme in statement:
+            if lexeme.getType() in ["and operator", "or operator", "XOR operator"]:
+                # TODO make boolean object, look ahead(statement)
+                # TODO look ahead(statement)
+                # TODO self.boolean = obj
+
+            elif lexeme.getType() in ["Equal comparison Operator", "Not equal comparison"]:
+                # TODO make comparison object, look ahead(statement)
+                # TODO look ahead(statement)
+                # TODO self.comparison = obj
+    
 
 #! make booleans
 
@@ -252,6 +453,7 @@ class Arithmetic():
         self.an= None
         self.left_operand= None
         self.right_operand= None
+
 class Operation1():
     def __init__(self,lexemes):
         self.leaf_operand=None #* SUM OFF | DIFF OF etc
@@ -302,14 +504,6 @@ class CodeBlock():
         self.linebreak = None
 
 #!class functions, function call etc
-
-
-
-
-
-
-
-
 
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
     def __init__(self):
@@ -383,274 +577,7 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         
 #* -------------
 #* -- FUNCTIONS --
-def isKeyWord(word):
-    keywords = theCode.getKeyWords()
-
-# def parser(code): #* function that generates the parse tree of the statements
-    keywords = theCode.getKeyWords()
-    # iterate thryoughj every element in code
-    for lineOfCode in code:
-        if re.match(keywords["^VISIBLE"], lineOfCode):
-            checkGrammar(lineCode, "print")
-
-
 # ! notes we should be updating the symbol table that we refer to everytime we encounter an identifier, baka andun na kasi pala siya
-
-def isStatement(code,lexemes):
-    
-    for element in code:
-        #! VARIABLE DECLARATION
-        if isVardec(element):
-            makeLexeme("I HAS A","Variable Declaration",lexemes)
-
-            #Split by space
-            element=element.split(" ")
-            tempSubstring= element[3:len(element)]
-            # print(tempSubstring)
-
-            if isVarident(tempSubstring[0]):#Unintialized var
-                makeLexeme(tempSubstring[0], "Variable Identifier", lexemes)
-
-                if len(tempSubstring) > 1 and re.match("^ITZ$",tempSubstring[1]):  #initialized var
-                    isVarinit(tempSubstring,lexemes)
-        #! PRINT STATEMENT
-        elif isPrint(element):
-            makeLexeme("VISIBLE","Print Statement",lexemes)
-            element = element[7:len(element)] # remove the "VISIBLE" keyword from the string
-            
-
-            operands = parseVisibleOperand(element, lexemes) # this will return the operands of the visible statement
-            print("OPERANDS",operands)
-
-            # TODO : add a function call here that checks if an operand from operands exists in the SYMBOL table. if it is, remove it from the operands list
-            for operand in operands: # determine the type of each operand
-                if isExpr(operand, lexemes): # loosely check if the syntax follows an expression: <operation> <operand> AN <operand>
-                    # pass the operand to isExpr(operand, lexemes) and should return the value to be displayed whatever the expression is
-                    value = arithmetic(operand, lexemes) #  can only evaluate numbar or numbr for now
-                    print(value)
-
-                    if value == None:
-                        print("MUST BE BOOLEAN")
-                        bool_value = boolean(operand, lexemes)
-                        # ! consider mo rin ung ANY OF AT ALL OF WITH INFINITY ARGUMENTS!
-
-                        if bool_value == None:
-                            print("MUST BE COMPARISON")
-                            comp_value = comparison(operand, lexemes)
-
-                elif isLiteral(operand, lexemes):
-                    terminal.setDisplay(element)
-
-        # ! ASSIGNMENT OPERATOR
-        # elif isAssignment(element):
-
-    #return lexeme table    
-    return lexemes
-
-# * ---------------------------------------------------------------------------------------------------- IS STATEMENT FXNS
-
-def parseVisibleOperand(substring, lexemes): # * function that counts and collects the operand of a visible statement
-    operand = [] # store the operands read
-    tempHolder = "" # temp holder for the substring to be generated
-    start = True # to determine if it's the start of the string
-    end = False # to determine if it's the end of the string
-    # iterate through every character in the string
-
-    for char in substring:
-        if start==True and char == "\"": # it's a yarn literal delimiter
-            makeLexeme(char, "String Delimiter", lexemes)
-            start = False
-            end = True
-        elif end == True and char == "\"": # end of the yarn delimiter
-            makeLexeme(char, "String Delimiter", lexemes)
-            # tempHolder = tempHolder + char
-            end = False
-            operand.append(tempHolder) # add the constructed string as an operand of the visible statement
-            tempHolder="" # reset the value of tempHolder
-        else: # it must be something else other than a yarn
-            tempHolder = tempHolder + char
-            # tempHolder = tempHolder+char
-    operand.append(tempHolder)
-    return operand
-
-#def isCodeBlock
-def isPrint(code):
-    if re.match("^VISIBLE", code):
-        return True
-    return False
-#def isVisibleOperand
-def isExpr(substring,lexemes): # * function that determines if a substring is an expression
-    if re.match("([A-Z\s]*) (.*) AN (.*)", substring):
-        return True
-    return False
-
-    # elif isBoolean():
-        # pass
-    # elif isComparison():
-
-def arithmetic(substring, lexemes): # * function that determines if an expr is an arithmetic expr, will return the evaluated expression
-    operations = ["SUM", "DIFF", "BIGGR", "SMALLR", "PRODUKT", "QUOSHUNT", "MOD"]
-    toEval = ""
-    
-    for operation in operations:
-        # * REGEX FOR NUMBR
-        arithmetic_regex = operation + " OF (-?[0-9][0-9]*) AN (-?[0-9][0-9]*)"
-        pattern = re.compile(arithmetic_regex)
-        
-        for match in pattern.finditer(substring):
-            
-            evaluated_val = evaluateExpr(operation, match.group(1), match.group(2), "numbr")
-            makeLexeme(operation+"OF", "Arithmetic Operator", lexemes)
-            makeLexeme(match.group(1), "NUMBR", lexemes)
-            makeLexeme("AN", "Operator Separator", lexemes)
-            makeLexeme(match.group(2), "NUMBR", lexemes)
-            return evaluated_val
-
-        # * REGEX FOR NUMBAR
-        arithmetic_regex = operation + " OF (-?[0-9]+\.[0-9]+) AN (-?[0-9]+\.[0-9]+)"
-        pattern = re.compile(arithmetic_regex)
-        
-        for match in pattern.finditer(substring):
-            evaluated_val = evaluateExpr(operation, match.group(1), match.group(2), "numbar")
-            makeLexeme(operation+"OF", "Arithmetic Operator", lexemes)
-            makeLexeme(match.group(1), "NUMBAR", lexemes)
-            makeLexeme("AN", "Operator Separator", lexemes)
-            makeLexeme(match.group(2), "NUMBAR", lexemes)
-            return evaluated_val
-
-    return None
-
-def larger(first, second): #* function that returns which of the two parameters is larger\
-    if first > second:
-        return first
-    return second
-
-def smaller(first, second): #* function that reutns which of the two parameters is smaller
-    if first < second:
-        return first
-    return second
-
-def evaluateExpr(operation, operand1, operand2, operandType): #* function that evaluates the expression
-    
-    if operandType == "numbr":
-        operand1 = int(operand1)
-        operand2 = int(operand2)
-    elif operandType == "numbar":
-        operand1 = float(operand1)
-        operand2 = float(operand2)
-
-
-    if operation == "SUM":
-        return operand1 + operand2
-    elif operation == "DIFF":
-        return operand1 - operand2
-    elif operation == "BIGGR":
-        return larger(operand1, operand2)
-    elif operation == "SMALLR":
-        return smaller(operand1, operand2)
-    elif operation == "PRODUKT":
-        return operand1 * operand2
-    elif operation == "QUOSHUNT":
-        return operand1 / operand2
-    elif operation == "MOD":
-        return operand1 % operand2
-    
-    return [operand1, operation, operand2]
-
-def boolean(substring, lexemes):
-    operations = ["BOTH OF ", "EITHER OF ", "WON OF "] # AND, OR, XOR
-    toEval = ""
-    
-    for operation in operations:
-        boolean_regex = operation +  "(WIN|FAIL) AN (WIN|FAIL)"
-        pattern = re.compile(boolean_regex)
-        
-        for match in pattern.finditer(substring):
-            # evaluated_val = evaluateExpr(operation, match.group(1), match.group(2), "numbr")
-            makeLexeme(operation, "Boolean Operator", lexemes)
-            makeLexeme(match.group(1), "TROOF value", lexemes)
-            makeLexeme("AN", "Operator Separator", lexemes)
-            makeLexeme(match.group(2), "TROOF value", lexemes)
-            # return evaluated_val
-            return True
-
-    return None
-
-def comparison(substring, lexemes):
-    operations = ["BOTH SAEM ", "DIFFRINT "]
-    toEval = ""
-    
-    for operation in operations:
-        boolean_regex = operation +  "(.*) AN (.*)" #! for now it takes anything as operands but should only be varident, numbr, numbar, or arithmetic
-        pattern = re.compile(boolean_regex)
-        
-        for match in pattern.finditer(substring):
-            # evaluated_val = evaluateExpr(operation, match.group(1), match.group(2), "numbr")
-            makeLexeme(operation, "Comparison Operator", lexemes)
-            makeLexeme(match.group(1), "Operand", lexemes)
-            makeLexeme("AN", "Operator Separator", lexemes)
-            makeLexeme(match.group(2), "Operand", lexemes)
-            # return evaluated_val
-            return True
-
-    return None
-
-def isLiteral(substring, lexemes):
-    if re.match("^-?[0-9][0-9]*$", substring):
-        tempLexeme = Lexeme(substring)
-        tempLexeme.setType("NUMBR")
-        tempLexeme.export(lexAndSymbolTables)
-        lexemes.append(tempLexeme)
-
-    elif re.match("^-?[0-9]+\.[0-9]+$", substring):
-        tempLexeme = Lexeme(substring)
-        tempLexeme.setType("NUMBAR")
-        lexemes.append(tempLexeme)
-    elif re.match('([^\\"]|\\")', substring): 
-        #still wrong
-        # tempLexeme = Lexeme(substring)
-        # tempLexeme.setType("YARN")
-        # lexemes.append(tempLexeme)
-
-        makeLexeme(substring,"YARN",lexemes)
-    elif re.match("^WIN$|^FAIL$", substring):
-        tempLexeme = Lexeme(substring)
-        tempLexeme.setType("TROOF")
-        lexemes.append(tempLexeme)
-    elif re.match("^NUMBR$|^NUMBAR$| ^YARN$|^TROOF$", substring):
-        tempLexeme = Lexeme(substring)
-        tempLexeme.setType("TYPE LITERAL")
-        lexemes.append(tempLexeme)
-    else:
-        return False
-    return True
-
-def isVardec(code):
-    if re.match("^I HAS A", code):
-        return True
-    return False
-
-def isVarident(substring):
-    if re.match("^[a-z][a-zA-Z0-9_]*", substring):
-        return True
-    return False
-
-def isVarinit(substring, lexemes):
-    #Substring[0] is varident
-    #Substring[1] is ITZ
-    #Substring[2] nested if
-    makeLexeme(substring[1],"Variable Assignment",lexemes)
-    if isLiteral(substring[2], lexemes):
-        return True
-    elif isExpr(substring[2]):
-        return True
-    elif isVarident(substring[2]):
-        return True
-    else:
-        return False
-
-
-
 
 # * ---------------------------------------------------------------------------------------------------- LEXICAL ANALYSIS
 def makeLexeme(mismo,lex_type,lexemes): #* function that constructs a lexeme object for a passed string
@@ -700,7 +627,6 @@ def willBeExpectingIdentifier(word, keywords, literals, identifiers, operations,
         return False, False, True
     return False, False, False
     
-
 def lexicalAnalysis():
     code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end") # get the code in the display
     
@@ -811,47 +737,49 @@ def syntaxAnalysis(): # * function that executes syntax analysis
     print("SYNTAX ANALYSIS")
     lexemes = theCode.getLexemes()
 
-    statements = []
-    multiline_comment_active = False
-    statementHolder = [] # temporary holder for multiple lexemes that should form a statement
-    clearStatementHolder = False
-    printFlag = False
+    # statements = []
+    # multiline_comment_active = False
+    # statementHolder = [] # temporary holder for multiple lexemes that should form a statement
+    # clearStatementHolder = False
+    # printFlag = False
+
+    startFlag = False
+    endFlag = False
+    indexOfStartCode = 0
+    indexOfEndCode = 0
+    index = 0 
+
+    # look for code delimiters first
     for lexeme in lexemes:
         # print("LEXEME: ", lexeme.mismo, "->", lexeme.type)
-        if lexeme.getType() == "Single Line Delimiter" and multiLine_comment_active == False:
-            continue # if single line comment, proceed to next lexeme
-        elif lexeme.getType() == "Multiline Comment Delimiter":
-            multiLine_comment_active = True
-            continue
-        elif multiline_comment_active == True:
-            continue
-        elif lexeme.getType() == "Comment Delimiter":
-            multiline_comment_active = False
-            continue
-        elif lexeme.getType() == "Code Start Delimiter":
+        if lexeme.getType() == "Code Start Delimiter":
+            indexOfStartCode = index
+            startFlag = True
             print("START OF PROGRAM FOUND!")
         elif lexeme.getType() == "Code End Delimiter":
+            endFlag = True
+            indexOfEndCode = index
             print("END OF PROGRAM FOUND!")
             break # ! not sure about this pero i think it is 
-        else:
-            print("Checking kung statement")
-            if lexeme.getType() == "Output Keyword" and printFlag == False:
-                printFlag = True
-                statementHolder.append(lexeme)
-            elif printFlag == True and clearStatementHolder == False:
-                if visibleOperand(lexeme):
-                     statementHolder.append(lexeme)
-                elif lexeme.getType() == "Line Break":
-                    statementHolder.append(lexeme)
-                    clearStatementHolder = True
+        index = index + 1
 
+    # create program object and loop through statements between the code delimiters
+    if startFlag and endFlag:
+        hai_lexeme = lexemes.pop(indexOfStartCode)
+        kthxbye_lexeme = lexemes.pop(indexOfEndCode)
 
-            if clearStatementHolder:
-                statements.append(statementHolder)
-                statementHolder = []
-                
+        programRoot = Program(lexemes, hai_lexeme, kthxbye_lexeme)
+        programRoot.lookAhead(lexemes)
 
-# def isStatement(listOfLexemes): # * function that checks if the list of lexemes form a statement
+        statements = programRoot.getStatements()
+        statementRoot = Statement()
+        statementRoot.lookAhead(statements)
+
+        # print("ASTTAETMENTS")
+        # for statement in programRoot.getStatements():
+        #     for lexeme in statement:
+        #         print(lexeme.getActual())
+
 
 def visibleOperand(lexeme): # * for visible operands only
 
