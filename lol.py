@@ -195,40 +195,57 @@ class Statement():
         self.linebreak = None
 
     def lookAhead(self, statements):
-        statementHolder = []
+        # * holders
+        # statementHolder = []
+        ifCondObj = None
+        ifElseObj = None
+        ifClauseStatementHolder = []
+        ifClauseListOfStatements = []
+
+        #* flags
         multiline_comment_active = False
         printFlag = False
-        ifCondObj = None
+        ifElseFlag = False
+        ifClauseActive = False
         # TODO create if else flag for multiple lines kasi ung if else
         #! take note of comments
         #! take note of the order of the statements
         for statement in statements:
-            for lexeme in statement: 
-                if lexeme.getType() == "Output Keyword": #* PRINT
+            for lexeme in statement: # ! maybe we can replace this part
+                if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False: #* PRINT
                     printObj = Print()
                     printObj.lookAhead(statement)
                     self.print = printObj
                     # self.print.append(statement)
-                elif lexeme.getType() == "Variable Declaration": #* VAR DEC
+                elif lexeme.getType() == "Variable Declaration" and ifElseFlag == Falseand ifClauseActive == False: #* VAR DEC
                     vardecObj = Vardec()
                     vardecObj.lookAhead(statement)
                     self.vardec = vardecObj
-                elif lexeme.getType() == "User input": #* GIMMEH
+                elif lexeme.getType() == "User input" and ifElseFlag == Falseand ifClauseActive == False: #* GIMMEH
                     inputObj = Input()
                     inputObj.lookAhead(statement)
                     self.input = inputObj
-                elif lexeme.getType() == "Variable Identifier": #* ASSIGNMENT
+                elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False: #* ASSIGNMENT
                     assignObj = Assignment()
                     assignObj.lookAhead(statement)
-                    self.input = assignObj
-                elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"]: #* IF CONDITION
+                    self.assignment = assignObj
+                elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False: #* IF CONDITION
                     ifCondObj = Ifcond()
                     ifCondObj.lookAhead(statement)
-                    self.input = assignObj
-                elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter": #* IF STATEMENT
-                    #TODO IF-ELSE na obj
-                    #TODO IF-ELSE na obj.setIfCond(ifCondObj)
+                    ifElseFlag = True
+                elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifElseFlag and ifClauseActive == False: #* IF STATEMENT
+                    #IF-ELSE na obj
+                    ifElseObj = Ifelse(lexeme)
+                    #IF-ELSE na obj.setIfCond(ifCondObj)
+                    ifElseObj.setCond(ifCondObj)
                     #TODO IF-ELSE na obj.lookAhead
+                elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False: # the true branch for if-else statement
+                    ifClauseObject = IfClause(lexeme)
+                    ifClauseActive = True
+                elif ifClauseActive and ifElseFlag: # codeblock inside true branch
+                    # collect all statements until a NO WAI is encountered
+                    
+                    
 
 
 
@@ -398,16 +415,6 @@ class Assignment():
             exprObj.setExpr(expr_holder) # !
             
 #! class for concatenation
-
-class Ifelse():
-    def __init__(self,lexemes,orly_lexeme,oic_lexeme):
-        self.ifcond=None
-        self.ifclause=None
-        self.elseclause=None
-        self.oic=oic_lexeme
-        self.mebbeclause=None
-
-
 class Ifcond():
     def __init__(self,lexemes):
         self.boolean=None
@@ -428,7 +435,29 @@ class Ifcond():
                 # TODO make comparison object, look ahead(statement)
                 # TODO look ahead(statement)
                 # TODO self.comparison = obj
-    
+
+class Ifelse():
+    def __init__(self,orly_lexeme):
+        self.ifcond=None
+        self.orly = None # orly lexeme
+        self.ifclause=None
+        self.elseclause=None
+        self.oic=oic_lexeme
+        self.mebbeclause=None
+
+    def setCond(self, ifCondObj):
+        self.ifcond = ifCondObj
+
+class IfClause():
+    def __init__(self, ya_rly_lexeme):
+        self.left_operand=ya_rly_lexeme
+        self.right_operand=None  #Code Block
+
+class ElseClause():
+    def __init__(self,lexemes,orly_lexeme):
+        self.left_operand=orly_lexeme
+        self.right_operand=None  #Code Block
+
 
 #! make booleans
 
@@ -462,15 +491,7 @@ class Operation2():
     def __init__(self,lexemes):
         self.leaf_operand=None #* BIGGR OF SMLLR OF 
 
-class IfClause():
-    def __init__(self,lexemes,yarly_lexeme):
-        self.left_operand=yarly_lexeme
-        self.right_operand=None  #Code Block
 
-class ElseClause():
-    def __init__(self,lexemes,orly_lexeme):
-        self.left_operand=orly_lexeme
-        self.right_operand=None  #Code Block
 
 #! class MebbeClause
 
