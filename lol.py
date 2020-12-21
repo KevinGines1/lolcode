@@ -156,7 +156,7 @@ class Program():
         statementHolder = []
         multiline_comment_active = False
         for lexeme in lexemes:
-            if lexeme.getType() == "Single Line Delimiter" and multiLine_comment_active == False:
+            if lexeme.getType() == "Single Line Delimiter" and multiline_comment_active == False:
                 continue # if single line comment, proceed to next lexeme
             elif lexeme.getType() == "Multiline Comment Delimiter":
                 multiline_comment_active = True
@@ -172,6 +172,7 @@ class Program():
                 # statementHolder.append(lexeme)
                 self.statement.append(statementHolder)
                 statementHolder = []
+            
 
     def getStatements(self):
         return self.statement
@@ -192,17 +193,21 @@ class Statement():
         self.loop=None
         self.function=None
         self.functioncall=None
-        self.statement=None
-        self.linebreak = None
+        # self.statement=None
+        # self.linebreak = None
 
     def lookAhead(self, statements):
         # * holders
         # statementHolder = []
         ifCondObj = None
         ifElseObj = None
+        caseObj= None
+        defaultObj= None
         ifClauseObject = None
         elseClauseObject = None
+        switchCaseObject=None
         clauseListOfStatements = []
+        caseListofStatements= []
 
         #* flags
         multiline_comment_active = False
@@ -210,6 +215,9 @@ class Statement():
         ifElseFlag = False
         ifClauseActive = False
         elseClauseActive = False
+        switchCaseActive= False
+        caseObjActive=False
+        defaultObjActive= False
         # TODO create if else flag for multiple lines kasi ung if else
         #! take note of comments
         #! take note of the order of the statements
@@ -218,7 +226,7 @@ class Statement():
             if statement == []:
                 continue
             lexeme = statement[0] #! -- with this one
-            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* PRINT
+            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and printFlag ==False: #* PRINT
                 printObj = Print()
                 printObj.lookAhead(statement)
                 self.print = printObj
@@ -270,7 +278,7 @@ class Statement():
                 else:
                     clauseListOfStatements.append(statement)
             elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
-                elif lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
+                if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
                     # trigger some flags
                     ifElseFlag = False
                     elseClauseActive = False
@@ -286,7 +294,46 @@ class Statement():
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
                     clauseListOfStatements.append(statement)
+            elif lexeme.getType() == "Switch Case Start Delimiter" and not switchCaseActive and not ifElseFlag and not ifClauseActive and not elseClauseActive:
+                switchCaseActive= True
+                switchCaseObject= SwitchCase(lexeme)
 
+            elif switchCaseActive and lexeme.getType() in ["Case Specifier", "Default Switch Case Specifiier"] and not caseObjActive:
+                if lexeme.getType() == "Case Specifier":
+                    caseObjActive= True
+                    caseObj = Case()
+                    caseObj.lookAhead(statement)
+                elif lexeme.getType() == "Default Switch Case Specifiier":
+                    defaultObj=DefaultCase(lexeme)
+                    defaultObjActive=True
+                    
+            elif switchCaseActive and defaultObjActive and not caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive:
+                if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter":
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(caseListofStatements)
+                    defaultObj.setCodeBlock(codeBlockObj)
+                    defaultObjActive = False
+                    switchCaseObject.setDefaultCase(defaultObj)
+                    switchCaseObject.setOIC(lexeme)
+                    switchCaseActive=False
+            
+                    caseListofStatements = []
+                else:
+                    caseListofStatements.append(statement)                
+
+            elif switchCaseActive and caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive:
+                if lexeme.getType()=="Break Statement":
+                    codeBlockObj= CodeBlock()
+                    codeBlockObj.lookAhead(caseListofStatements)
+                    caseObj.setCodeBlock(codeBlockObj)
+                    caseObj.setGTFO(lexeme)
+                    caseObjActive=False
+                    switchCaseObject.setCase(caseObj)
+
+                    caseListofStatements=[]
+
+                else:
+                    caseListofStatements.append(statement)
 
 
 class Print():
@@ -328,12 +375,14 @@ class VisibleOperand():
                 string_delimiter_flag = True
                 literalObj = Literal()
             elif string_delimiter_flag:
-                self.literal = literalObj.setValue(lexeme)
+                literalObj.setValue(lexeme)
+                self.literal=literalObj
             elif lexeme.getType()=="String Delimiter" and string_delimiter_flag:
                 string_delimiter_flag = False
             elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
                 literalObj = Literal()
-                self.literal = literalObj.setValue(lexeme)
+                literalObj.setValue(lexeme)
+                self.literal=literalObj
             elif lexeme.getType() == "Variable Identifier":
                 self.varident = lexeme
             elif expr_active:
@@ -343,6 +392,7 @@ class VisibleOperand():
                 exprObj = Expr()
         if expr_active:
             exprObj.setExpr(expr_holder) # !
+
 
 # TODO : expr
 class Expr():
@@ -401,7 +451,8 @@ class Varinit():
                 self.left_operand = lexeme
             elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
                 literalObj = Literal()
-                self.literal = literalObj.setValue(lexeme)
+                literalObj.setValue(lexeme)
+                self.literal = literalObj
             elif lexeme.getType() == "Variable Identifier":
                 self.varident = lexeme
             elif expr_active:
@@ -516,21 +567,66 @@ class ElseClause():
 
 
 #! make booleans
+class Boolean():
+    def __init__(self):
+        pass
 
 class Comparison():
-    def __init__(self,lexemes):
+    def __init__(self):
         self.compoperator=None
-        self.operand=None
-        self.operand2=None
-        self.an=None  #* reqd AN
+        self.left_operand=None   #<compoperator> <operand> AN <operand> 
+                            #|<compoperator> <operand> AN <operation2> <operand> AN <operand> 
+        self.right_operand=None
+
+    def lookAhead(self, statement):
+        operandHolder = []
+
+        operation2Obj= None
+        operandObj = None
+        leftOperandActive=False
+        operation2Active=False
+        
+        #!make flags for operand and arithmetic since operand needs statement and not lexeme
+        for lexeme in statement:
+            if lexeme.getType() in ["Equal comparison Operator", "Not equal comparison operator"]:
+                self.compoperator = lexeme
+            else:
+                operandHolder.append(lexeme)
+                if lexeme.getType()=="Operand Separator" and self.left_operand == None:
+                    operandObj=Operand()
+                    operandObj.lookAhead(statement)
+                    self.left_operand = operandHolder  # <compoperator> <operand>
+                    operandHolder=[]
+                    leftOperandActive=True
+                elif lexeme.getType() in ["Maximum Operator", "Minimum Operator"] and leftOperandActive:
+                    operation2Obj=Operation2(lexeme)      # <compoperator> <operand> AN <operation2>
+                    operation2Active=True
+                elif operation2Active and lexeme.getType == "Operand Separator":
+                    operation2Obj.setLeftOperand(operandHolder)  # <compoperator> <operand> AN <operation2> 
+                    operandHolder=[]
+                elif operation2Obj.left_operand != None and operation2Active:
+                    operation2Obj.setRightOperand(operandHolder) # <compoperator> <operand> AN <operation2> <operand> AN <operand>
+                    operandHolder = []
+                    operation2Active=False
+                    self.right_operand=operation2Obj
+                elif not operation2Active and leftOperandActive:
+                    self.right_operand=lexeme     # <compoperator> <operand> AN <operand>
 
 class Compoperator():
     def __init__(self, lexemes):
         self.left_operand= None   #BOTH SAEM  | DIFFRNT
 
 class Operand():
-    def __init__(self, lexemes):
+    def __init__(self):
         self.leaf_operand= None # varident, numbr, numbr, arithmetic 
+
+    def lookAhead(self,statement):
+        for lexeme in statement:
+            if lexeme.getType in ["NUMBR Literal", "NUMBAR Literal","Variable Identifier"]:
+                self.leaf_operand=lexeme
+            elif lexeme.getType in ["SUM OF","DIFF OF","PRODCUKT OF","QUOSHUNT OF","MOD OF"]:
+                #!make arithmetic object
+                pass
      
 class Arithmetic():
     def __init__(self, lexemes):
@@ -544,26 +640,72 @@ class Operation1():
         self.leaf_operand=None #* SUM OFF | DIFF OF etc
 
 class Operation2():
-    def __init__(self,lexemes):
-        self.leaf_operand=None #* BIGGR OF SMLLR OF 
+    def __init__(self,lexeme):
+        self.leaf_operand=lexeme
+        self.left_operand = None
+        self.right_operand = None
+
+    def setLeftOperand(self,lexeme):
+        self.left_operand=lexeme
+
+    def setRightOperand(self,lexeme):
+        self.right_operand=lexeme    
 
 
 
 #! class MebbeClause
 
 class SwitchCase():
-    def __init__(self,lexemes,wtf_lexeme,oic_lexeme):
-        self.left_operand=wtf_lexeme
-        self.right_operand=oic_lexeme
-        self.case=None
+    def __init__(self,lexeme):
+        self.left_operand=lexeme  #WTF
+        self.right_operand=None #OIC
+        self.case=[]        #case OMG
+        self.default=None  # case OMGWTF
+    
+    def setCase(self,caseObj):
+        self.case.append(caseObj)
+    
+    def setDefault(self,caseObj):
+        self.default=caseObj
+
+    def setOIC(self,lexeme):
+        self.right_operand=lexeme
+
+
+    
+
+class DefaultCase():
+    def __init__(self,lexeme):
+        self.leaf_operand = lexeme
+        self.codeblock = None
+    
+    
+
 
 class Case():
-    def __init__(self,lexemes):
+    def __init__(self):
         self.leaf_operand=None
         self.literal=None
         self.codeblock=None
         self.middle_operand=None     #GTFO
         self.right_operand=None     #case
+    def lookAhead(self,statement):
+        for lexeme in statement:
+            if lexeme.getType()== "Case Specifier":
+                self.leaf_operand=lexeme
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
+                self.literal=lexeme
+    def setGTFO(self,lexeme):
+        self.middle_operand=lexeme
+
+    def setCodeBlock(self,codeblock):
+        self.codeblock=codeblock
+    
+        
+             
+    
+    
+
 
 class CodeBlock():
     def __init__(self):
@@ -631,11 +773,14 @@ class CodeBlock():
             elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # the true branch for if-else statement
                 ifClauseObject = IfClause(lexeme)
                 ifClauseActive = True
-            elif ifClauseActive and ifElseFlag: # codeblock inside true branch
+
+
+            elif ifClauseActive and ifElseFlag:  # codeblock inside true branch
                 # collect all statements until a NO WAI is encountered
-                if lexeme.getType() != "ELSE delimiter":
-                    clauseListOfStatements.append(statement)
-                else: 
+                if lexeme.getType() == "ELSE-IF delimiter":
+                    # mebbe clause
+                    pass
+                elif lexeme.getType() == "ELSE delimiter":
                     # trigger some flags
                     ifClauseActive = False
                     elseClauseActive = True
@@ -648,12 +793,11 @@ class CodeBlock():
                     ifElseObj.setIfClause(ifClauseObject)
                     # we create the elseClause object since a NO WAI is encountered
                     elseClauseObject = ElseClause(lexeme)
-                    clauseListOfStatements = [] # clear the clauseListOfStatements holder
+                    clauseListOfStatements = []  # clear the clauseListOfStatements holder
+                else:
+                    clauseListOfStatements.append(statement)
             elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
-                if lexeme.getType() == "ELSE-IF delimiter":
-                    # MEBBE
-                    pass
-                elif lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
+                if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
                     # trigger some flags
                     ifElseFlag = False
                     elseClauseActive = False
@@ -669,6 +813,7 @@ class CodeBlock():
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
                     clauseListOfStatements.append(statement)
+
 
 #!class functions, function call etc
 
