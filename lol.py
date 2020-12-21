@@ -250,9 +250,10 @@ class Statement():
                 ifClauseActive = True
             elif ifClauseActive and ifElseFlag: # codeblock inside true branch
                 # collect all statements until a NO WAI is encountered
-                if lexeme.getType() != "ELSE delimiter":
-                    clauseListOfStatements.append(statement)
-                else: 
+                if lexeme.getType() == "ELSE-IF delimiter":
+                    # mebbe clause
+                    pass
+                elif lexeme.getType() == "ELSE delimiter":
                     # trigger some flags
                     ifClauseActive = False
                     elseClauseActive = True
@@ -266,10 +267,9 @@ class Statement():
                     # we create the elseClause object since a NO WAI is encountered
                     elseClauseObject = ElseClause(lexeme)
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
+                else:
+                    clauseListOfStatements.append(statement)
             elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
-                if lexeme.getType() == "ELSE-IF delimiter":
-                    # MEBBE
-                    pass
                 elif lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
                     # trigger some flags
                     ifElseFlag = False
