@@ -598,6 +598,8 @@ class CodeBlock():
         #! take note of the order of the statements
         for statement in statements:
             # for lexeme in statement: # ! maybe we can replace this part --
+            if statement == []:
+                continue
             lexeme = statement[0] #! -- with this one
             if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* PRINT
                 printObj = Print()
