@@ -148,7 +148,8 @@ class Program():
     def __init__(self,lexemes,hai_lexeme,kthxbye_lexeme):
         self.HAI=hai_lexeme
         self.KTHXBYE=kthxbye_lexeme
-        self.statement=[]
+        # self.statement=[]
+        self.statement=list()
         # self.linebreak=None
 
     def lookAhead(self, lexemes):
@@ -168,7 +169,7 @@ class Program():
             elif lexeme.getType() != "Line Break":
                 statementHolder.append(lexeme)
             elif lexeme.getType() == "Line Break":
-                # statementHolder.append(lexeme) 
+                # statementHolder.append(lexeme)
                 self.statement.append(statementHolder)
                 statementHolder = []
 
@@ -199,55 +200,92 @@ class Statement():
         # statementHolder = []
         ifCondObj = None
         ifElseObj = None
-        ifClauseStatementHolder = []
-        ifClauseListOfStatements = []
+        ifClauseObject = None
+        elseClauseObject = None
+        clauseListOfStatements = []
 
         #* flags
         multiline_comment_active = False
         printFlag = False
         ifElseFlag = False
         ifClauseActive = False
+        elseClauseActive = False
         # TODO create if else flag for multiple lines kasi ung if else
         #! take note of comments
         #! take note of the order of the statements
         for statement in statements:
-            for lexeme in statement: # ! maybe we can replace this part
-                if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False: #* PRINT
-                    printObj = Print()
-                    printObj.lookAhead(statement)
-                    self.print = printObj
-                    # self.print.append(statement)
-                elif lexeme.getType() == "Variable Declaration" and ifElseFlag == Falseand ifClauseActive == False: #* VAR DEC
-                    vardecObj = Vardec()
-                    vardecObj.lookAhead(statement)
-                    self.vardec = vardecObj
-                elif lexeme.getType() == "User input" and ifElseFlag == Falseand ifClauseActive == False: #* GIMMEH
-                    inputObj = Input()
-                    inputObj.lookAhead(statement)
-                    self.input = inputObj
-                elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False: #* ASSIGNMENT
-                    assignObj = Assignment()
-                    assignObj.lookAhead(statement)
-                    self.assignment = assignObj
-                elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False: #* IF CONDITION
-                    ifCondObj = Ifcond()
-                    ifCondObj.lookAhead(statement)
-                    ifElseFlag = True
-                elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifElseFlag and ifClauseActive == False: #* IF STATEMENT
-                    #IF-ELSE na obj
-                    ifElseObj = Ifelse(lexeme)
-                    #IF-ELSE na obj.setIfCond(ifCondObj)
-                    ifElseObj.setCond(ifCondObj)
-                    #TODO IF-ELSE na obj.lookAhead
-                elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False: # the true branch for if-else statement
-                    ifClauseObject = IfClause(lexeme)
-                    ifClauseActive = True
-                elif ifClauseActive and ifElseFlag: # codeblock inside true branch
-                    # collect all statements until a NO WAI is encountered
-                    
-                    
-
-
+            # for lexeme in statement: # ! maybe we can replace this part --
+            if statement == []:
+                continue
+            lexeme = statement[0] #! -- with this one
+            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* PRINT
+                printObj = Print()
+                printObj.lookAhead(statement)
+                self.print = printObj
+                # self.print.append(statement)
+            elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* VAR DEC
+                vardecObj = Vardec()
+                vardecObj.lookAhead(statement)
+                self.vardec = vardecObj
+            elif lexeme.getType() == "User input" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* GIMMEH
+                inputObj = Input()
+                inputObj.lookAhead(statement)
+                self.input = inputObj
+            elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+                assignObj = Assignment()
+                assignObj.lookAhead(statement)
+                self.assignment = assignObj
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* IF CONDITION
+                ifCondObj = Ifcond()
+                ifCondObj.lookAhead(statement)
+                ifElseFlag = True
+            elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
+                #IF-ELSE na obj
+                ifElseObj = Ifelse(lexeme)
+                #IF-ELSE na obj.setIfCond(ifCondObj)
+                ifElseObj.setCond(ifCondObj)
+                #TODO IF-ELSE na obj.lookAhead
+            elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # the true branch for if-else statement
+                ifClauseObject = IfClause(lexeme)
+                ifClauseActive = True
+            elif ifClauseActive and ifElseFlag: # codeblock inside true branch
+                # collect all statements until a NO WAI is encountered
+                if lexeme.getType() != "ELSE delimiter":
+                    clauseListOfStatements.append(statement)
+                else: 
+                    # trigger some flags
+                    ifClauseActive = False
+                    elseClauseActive = True
+                    # create a codeblock out of the collected statements inside the true branch of if
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(clauseListOfStatements)
+                    # set the codeblock as the right operand of the ifClause object
+                    ifClauseObject.setRightOperand(codeBlockObj)
+                    # ifClause is complete so we set it as the attribute of the ifElseObj
+                    ifElseObj.setIfClause(ifClauseObject)
+                    # we create the elseClause object since a NO WAI is encountered
+                    elseClauseObject = ElseClause(lexeme)
+                    clauseListOfStatements = [] # clear the clauseListOfStatements holder
+            elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
+                if lexeme.getType() == "ELSE-IF delimiter":
+                    # MEBBE
+                    pass
+                elif lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
+                    # trigger some flags
+                    ifElseFlag = False
+                    elseClauseActive = False
+                    # create a codeblock out of the collected statements inside the true branch of if
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(clauseListOfStatements)
+                    # set the codeblock as the right operand of the ifClause object
+                    elseClauseObject.setRightOperand(codeBlockObj)
+                    # ifClause is complete so we set it as the attribute of the ifElseObj
+                    ifElseObj.setElseClause(ifClauseObject)
+                    # we create the elseClause object since a NO WAI is encountered
+                    ifElseObj.setOIC(lexeme)
+                    clauseListOfStatements = [] # clear the clauseListOfStatements holder
+                else: 
+                    clauseListOfStatements.append(statement)
 
 
 
@@ -264,7 +302,7 @@ class Print():
             if lexeme.getType()=="Output Keyword":
                 self.left_operand = lexeme
             else:
-                operandHolder.append(lexemes)
+                operandHolder.append(lexeme)
 
         visibleOperandObj = VisibleOperand()
         visibleOperandObj.lookAhead(operandHolder)
@@ -416,7 +454,7 @@ class Assignment():
             
 #! class for concatenation
 class Ifcond():
-    def __init__(self,lexemes):
+    def __init__(self):
         self.boolean=None
         self.comparison=None
     
@@ -430,33 +468,51 @@ class Ifcond():
                 # TODO make boolean object, look ahead(statement)
                 # TODO look ahead(statement)
                 # TODO self.boolean = obj
+                pass
 
             elif lexeme.getType() in ["Equal comparison Operator", "Not equal comparison"]:
                 # TODO make comparison object, look ahead(statement)
                 # TODO look ahead(statement)
                 # TODO self.comparison = obj
+                pass
 
 class Ifelse():
     def __init__(self,orly_lexeme):
         self.ifcond=None
-        self.orly = None # orly lexeme
+        self.orly = orly_lexeme # orly lexeme
         self.ifclause=None
         self.elseclause=None
-        self.oic=oic_lexeme
-        self.mebbeclause=None
+        self.mebbeclause=None # !
+        self.oic=None
 
     def setCond(self, ifCondObj):
         self.ifcond = ifCondObj
+
+    def setIfClause(self, if_clause_object):
+        self.ifclause = if_clause_object
+    
+    def setElseClause(self, else_clause_object):
+        self.ifclause = else_clause_object
+
+    def setOIC(self, oic_lexeme):
+        self.oic = oic_lexeme
 
 class IfClause():
     def __init__(self, ya_rly_lexeme):
         self.left_operand=ya_rly_lexeme
         self.right_operand=None  #Code Block
 
+    def setRightOperand(self, codeBlock):
+        self.right_operand = codeBlock
+
+
 class ElseClause():
-    def __init__(self,lexemes,orly_lexeme):
-        self.left_operand=orly_lexeme
+    def __init__(self,no_wai_lexeme):
+        self.left_operand=no_wai_lexeme
         self.right_operand=None  #Code Block
+
+    def setRightOperand(self, codeBlock):
+        self.right_operand = codeBlock
 
 
 #! make booleans
@@ -501,8 +557,6 @@ class SwitchCase():
         self.right_operand=oic_lexeme
         self.case=None
 
-
-#! try implementation
 class Case():
     def __init__(self,lexemes):
         self.leaf_operand=None
@@ -512,7 +566,7 @@ class Case():
         self.right_operand=None     #case
 
 class CodeBlock():
-    def __init__(self, lexemes):
+    def __init__(self):
         self.print = None
         self.vardec = None
         self.expr = None
@@ -523,6 +577,96 @@ class CodeBlock():
         self.functioncall = None
         self.codeblock = None
         self.linebreak = None
+
+    def lookAhead(self, statements):
+        # * holders
+        # statementHolder = []
+        ifCondObj = None
+        ifElseObj = None
+        ifClauseObject = None
+        elseClauseObject = None
+        clauseListOfStatements = []
+
+        #* flags
+        multiline_comment_active = False
+        printFlag = False
+        ifElseFlag = False
+        ifClauseActive = False
+        elseClauseActive = False
+        # TODO create if else flag for multiple lines kasi ung if else
+        #! take note of comments
+        #! take note of the order of the statements
+        for statement in statements:
+            # for lexeme in statement: # ! maybe we can replace this part --
+            lexeme = statement[0] #! -- with this one
+            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* PRINT
+                printObj = Print()
+                printObj.lookAhead(statement)
+                self.print = printObj
+                # self.print.append(statement)
+            elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* VAR DEC
+                vardecObj = Vardec()
+                vardecObj.lookAhead(statement)
+                self.vardec = vardecObj
+            elif lexeme.getType() == "User input" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* GIMMEH
+                inputObj = Input()
+                inputObj.lookAhead(statement)
+                self.input = inputObj
+            elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+                assignObj = Assignment()
+                assignObj.lookAhead(statement)
+                self.assignment = assignObj
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* IF CONDITION
+                ifCondObj = Ifcond()
+                ifCondObj.lookAhead(statement)
+                ifElseFlag = True
+            elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
+                #IF-ELSE na obj
+                ifElseObj = Ifelse(lexeme)
+                #IF-ELSE na obj.setIfCond(ifCondObj)
+                ifElseObj.setCond(ifCondObj)
+                #TODO IF-ELSE na obj.lookAhead
+            elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # the true branch for if-else statement
+                ifClauseObject = IfClause(lexeme)
+                ifClauseActive = True
+            elif ifClauseActive and ifElseFlag: # codeblock inside true branch
+                # collect all statements until a NO WAI is encountered
+                if lexeme.getType() != "ELSE delimiter":
+                    clauseListOfStatements.append(statement)
+                else: 
+                    # trigger some flags
+                    ifClauseActive = False
+                    elseClauseActive = True
+                    # create a codeblock out of the collected statements inside the true branch of if
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(clauseListOfStatements)
+                    # set the codeblock as the right operand of the ifClause object
+                    ifClauseObject.setRightOperand(codeBlockObj)
+                    # ifClause is complete so we set it as the attribute of the ifElseObj
+                    ifElseObj.setIfClause(ifClauseObject)
+                    # we create the elseClause object since a NO WAI is encountered
+                    elseClauseObject = ElseClause(lexeme)
+                    clauseListOfStatements = [] # clear the clauseListOfStatements holder
+            elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
+                if lexeme.getType() == "ELSE-IF delimiter":
+                    # MEBBE
+                    pass
+                elif lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
+                    # trigger some flags
+                    ifElseFlag = False
+                    elseClauseActive = False
+                    # create a codeblock out of the collected statements inside the true branch of if
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(clauseListOfStatements)
+                    # set the codeblock as the right operand of the ifClause object
+                    elseClauseObject.setRightOperand(codeBlockObj)
+                    # ifClause is complete so we set it as the attribute of the ifElseObj
+                    ifElseObj.setElseClause(ifClauseObject)
+                    # we create the elseClause object since a NO WAI is encountered
+                    ifElseObj.setOIC(lexeme)
+                    clauseListOfStatements = [] # clear the clauseListOfStatements holder
+                else: 
+                    clauseListOfStatements.append(statement)
 
 #!class functions, function call etc
 
@@ -788,6 +932,10 @@ def syntaxAnalysis(): # * function that executes syntax analysis
     if startFlag and endFlag:
         hai_lexeme = lexemes.pop(indexOfStartCode)
         kthxbye_lexeme = lexemes.pop(indexOfEndCode)
+        print("CODE DELIMITERS")
+        print(hai_lexeme)
+        print(kthxbye_lexeme)
+        print("CODE DELIMITERS")
 
         programRoot = Program(lexemes, hai_lexeme, kthxbye_lexeme)
         programRoot.lookAhead(lexemes)
