@@ -9,7 +9,8 @@ window = Tk()
 window.geometry("1200x750") #widthxheight
 window.title("Ang ganda ni Maam Kat LOLTERPRETER")
     
-
+# TODO : DOUBLE CHECK IF ELSE STATEMENT
+# TODO : INFINITE ARITY 
 #* -- CLASSES --
 class SourceCode(): # * class for the source code
     # constructor
@@ -76,13 +77,13 @@ class SourceCode(): # * class for the source code
             "^MOD OF$": "Modulo Operator", 
             "^BIGGR OF$": "Maximum Operator", 
             "^SMALLR OF$": "Minimum Operator",  #MOD of to Smallr of
-            "^BOTH OF$": "and operator", #!
-            "^EITHER OF$": "or operator",#!
-            "^WON OF$": "XOR Operator",#!
+            "^BOTH OF$": "and operator", 
+            "^EITHER OF$": "or operator",
+            "^WON OF$": "XOR Operator",
             "^NOT$": "Not operator",
-            "^ANY OF$": "Infiinite arity or operator", #!
+            "^ANY OF$": "Infinite arity or operator", 
             "^ALL OF$": "Infinite arity and operator",  #! #Both of to ALL OF
-            "^BOTH SAEM$": "Equal comparison Operator",
+            "^BOTH SAEM$": "Equal comparison operator",
             "^DIFFRINT$": "Not equal comparison operator",
             "^SMOOSH$": "Concatenation operator",  #BOTH SAEM to SMOOSH
         }
@@ -252,10 +253,10 @@ class Statement():
                 #IF-ELSE na obj.setIfCond(ifCondObj)
                 ifElseObj.setCond(ifCondObj)
                 #TODO IF-ELSE na obj.lookAhead
-            elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # the true branch for if-else statement
+            elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # * the true branch for if-else statement
                 ifClauseObject = IfClause(lexeme)
                 ifClauseActive = True
-            elif ifClauseActive and ifElseFlag: # codeblock inside true branch
+            elif ifClauseActive and ifElseFlag: # * codeblock inside true branch
                 # collect all statements until a NO WAI is encountered
                 if lexeme.getType() == "ELSE-IF delimiter":
                     # mebbe clause
@@ -276,7 +277,7 @@ class Statement():
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else:
                     clauseListOfStatements.append(statement)
-            elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
+            elif elseClauseActive and ifElseFlag: # *  codeblock inside False/else branch
                 if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
                     # trigger some flags
                     ifElseFlag = False
@@ -293,26 +294,26 @@ class Statement():
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
                     clauseListOfStatements.append(statement)
-            elif lexeme.getType() == "Switch Case Start Delimiter" and not switchCaseActive and not ifElseFlag and not ifClauseActive and not elseClauseActive:
+            elif lexeme.getType() == "Switch Case Start Delimiter" and not switchCaseActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* SWITCH CASE
                 # encountered a switch case start so this triggers a flag
                 switchCaseActive= True
                 # create a switchCase Object
                 switchCaseObject= SwitchCase(lexeme)
 
-            elif switchCaseActive and lexeme.getType() in ["Case Specifier", "Default Switch Case Specifiier"] and not caseObjActive:
-                if lexeme.getType() == "Case Specifier":
+            elif switchCaseActive and lexeme.getType() in ["Case Specifier", "Default Switch Case Specifiier"] and not caseObjActive: #* CASES IN A SWITCH CASE
+                if lexeme.getType() == "Case Specifier": # case
                     # a CASE is encountered, trigger some flags
                     caseObjActive= True
                     # create an object
                     caseObj = Case()
                     caseObj.lookAhead(statement) # assign the case keyword and the literal value for the case object
-                elif lexeme.getType() == "Default Switch Case Specifiier":
+                elif lexeme.getType() == "Default Switch Case Specifiier": # default case
                     # default case is encountered
                     defaultObj=DefaultCase(lexeme)
                     # trigger some flags
                     defaultObjActive=True
                     
-            elif switchCaseActive and defaultObjActive and not caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive:
+            elif switchCaseActive and defaultObjActive and not caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* end of a switch case
                 if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter":
                     # if the end delimiter of a switch case is encountered, 
                     # create a codeblock object that will contain the collected statements
@@ -332,7 +333,7 @@ class Statement():
                     # collect the statements
                     caseListofStatements.append(statement)                
 
-            elif switchCaseActive and caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive:
+            elif switchCaseActive and caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* break statement in a case is encountered
                 if lexeme.getType()=="Break Statement":
                     # if the delimiter for a case in a switch case is encountered
                     # we create a codeblock that will contain the statements
@@ -519,6 +520,7 @@ class Assignment():
         if expr_active:
             exprObj.setExpr(expr_holder) # !
             
+
 #! class for concatenation
 class Ifcond():
     def __init__(self):
@@ -584,74 +586,160 @@ class ElseClause():
 
 #! make booleans
 class Boolean():
-    def __init__(self):
-        pass
+    def __init__(self, lexeme):
+        self.booloperation1 = lexeme
+        self.left_operand = None
+        self.right_operand = None
 
-class Comparison():
-    def __init__(self):
-        self.compoperator=None
-        self.left_operand=None   #<compoperator> <operand> AN <operand> 
-                            #|<compoperator> <operand> AN <operation2> <operand> AN <operand> 
-        self.right_operand=None
+    def setLeftOperand(self, left_operand):
+        # ! check if operand is valid
+        self.left_operand = left_operand
+    
+    def setRightOperand(self, right_operand):
+        # ! check if operand is valid
+        self.right_operand = right_operand
 
     def lookAhead(self, statement):
-        operandHolder = []
 
-        operation2Obj= None
-        operandObj = None
-        leftOperandActive=False
-        operation2Active=False
+        stack = []
+
+        for index in range(-1, 0):
+            lexeme = statement[index]
+
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]:
+                stack.append(lexeme)
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]:
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                    self.left_operand = left_operand
+                    self.right_operand = right_operand
+                else: # nested boolean
+                    boolObj = Comparison(lexeme)
+                    boolObj.setLeftOperand(left_operand)
+                    boolObj.setRightOperand(right_operand)
+                    stack.append(boolObj)
+            elif lexeme.getType() == "Not operator":
+                operand = stack.pop()
+                unaryObj = Unary(lexeme)
+                unaryObj.setOperand(operand)
+                stack.append(unaryObj)
+            # ! IMPLEMENT INFINITE ARITY
+            # elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]:
+
+
+
+class Comparison():
+    def __init__(self, lexeme):
+        self.compoperator=lexeme
+        self.left_operand=None   
+        #<compoperator> <operand> AN <operand> 
+        #<compoperator> <operand> AN <operation2> <operand> AN <operand> 
+        #<compoperator> <comparison> AN <comparison>
+        self.right_operand=None
+
+    def setLeftOperand(self, left_operand):
+        # ! check if operand is valid
+        self.left_operand = left_operand
+    
+    def setRightOperand(self, right_operand):
+        # ! check if operand is valid
+        self.right_operand = right_operand
+
+    def lookAhead(self, statement):
         
-        #!make flags for operand and arithmetic since operand needs statement and not lexeme
-        for lexeme in statement:
-            if lexeme.getType() in ["Equal comparison Operator", "Not equal comparison operator"]:
-                self.compoperator = lexeme
-            else:
-                operandHolder.append(lexeme)
-                if lexeme.getType()=="Operand Separator" and self.left_operand == None:
-                    operandObj=Operand()
-                    operandObj.lookAhead(statement)
-                    self.left_operand = operandHolder  # <compoperator> <operand>
-                    operandHolder=[]
-                    leftOperandActive=True
-                elif lexeme.getType() in ["Maximum Operator", "Minimum Operator"] and leftOperandActive:
-                    operation2Obj=Operation2(lexeme)      # <compoperator> <operand> AN <operation2>
-                    operation2Active=True
-                elif operation2Active and lexeme.getType == "Operand Separator":
-                    operation2Obj.setLeftOperand(operandHolder)  # <compoperator> <operand> AN <operation2> 
-                    operandHolder=[]
-                elif operation2Obj.left_operand != None and operation2Active:
-                    operation2Obj.setRightOperand(operandHolder) # <compoperator> <operand> AN <operation2> <operand> AN <operand>
-                    operandHolder = []
-                    operation2Active=False
-                    self.right_operand=operation2Obj
-                elif not operation2Active and leftOperandActive:
-                    self.right_operand=lexeme     # <compoperator> <operand> AN <operand>
+        stack = []
 
-class Compoperator():
-    def __init__(self, lexemes):
-        self.left_operand= None   #BOTH SAEM  | DIFFRNT
+        for index in range(-1, 0):
+            lexeme = statement[index]
+            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
+                stack.append(lexeme)
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator"]:
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+                arithObj = Arithmetic(lexeme)
+                arithObj.setLeftOperand(left_operand)
+                arithObj.setRightOperand(right_operand)
+                stack.append(arithObj)
+            elif lexeme.getType() in ["Maximum Operator", "Minimum Operator"]:
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+                operation2Obj = Operation2(lexeme)
+                operation2Obj.setLeftOperand(left_operand)
+                operation2Obj.setRightOperand(right_operand)
+                stack.append(operation2Obj)
+            elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"]:
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                    self.left_operand = left_operand
+                    self.right_operand = right_operand
+                else: # nested comparison 
+                    comparisonObj = Comparison(lexeme)
+                    comparisonObj.setLeftOperand(left_operand)
+                    comparisonObj.setRightOperand(right_operand)
+                    stack.append(comparisonObj)
+            
 
-class Operand():
+class Operand(): #! no need na ata
     def __init__(self):
         self.leaf_operand= None # varident, numbr, numbr, arithmetic 
 
     def lookAhead(self,statement):
-        for lexeme in statement:
-            if lexeme.getType in ["NUMBR Literal", "NUMBAR Literal","Variable Identifier"]:
-                self.leaf_operand=lexeme
-            elif lexeme.getType in ["SUM OF","DIFF OF","PRODCUKT OF","QUOSHUNT OF","MOD OF"]:
-                #!make arithmetic object
-                pass
+
+        if operandHolder[0] == []:
+            lexeme = operandHolder[1]
+        else:
+            lexeme = operandHolder[0]
+
+        if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal","Variable Identifier"]:
+            self.leaf_operand=lexeme
+        elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator"]:
+    #         # !make arithmetic object
+            arithmeticObj = Arithmetic()
+            arithmeticObj.lookAhead(operandHolder)
+        # for lexeme in operandHolder:
+        #         # pass
+
+    def setLeaf(self, leaf_operand):
+        self.leaf_operand = leaf_operand
      
 class Arithmetic():
-    def __init__(self, lexemes):
-        self.operation1 = None
+    def __init__(self, operation):
+        self.operation1 = operation
         self.an= None
         self.left_operand= None
         self.right_operand= None
+    
+    def setLeftOperand(self, left_operand):
+        # ! check if operand is valid
+        self.left_operand = left_operand
+    
+    def setRightOperand(self, right_operand):
+        # ! check if operand is valid
+        self.right_operand = right_operand
 
-class Operation1():
+    def lookAhead(self, statement):
+        
+        stack = []
+
+        for index in range(-1, 0):
+            lexeme = statement[index]
+            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
+                stack.append(lexeme)
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator"]:
+                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                    self.left_operand = left_operand
+                    self.right_operand = right_operand
+                else: # nested arithmetic
+                    right_operand = stack.pop()
+                    left_operand = stack.pop()
+                    arithObj = Arithmetic(lexeme)
+                    arithObj.setLeftOperand(left_operand)
+                    arithObj.setRightOperand(right_operand)
+                    stack.append(arithObj)
+
+class Operation1(): #! no need na ata
     def __init__(self,lexemes):
         self.leaf_operand=None #* SUM OFF | DIFF OF etc
 
@@ -662,12 +750,12 @@ class Operation2():
         self.right_operand = None
 
     def setLeftOperand(self,lexeme):
+        #! check if operand is valid
         self.left_operand=lexeme
 
     def setRightOperand(self,lexeme):
+        #! check if operand is valid
         self.right_operand=lexeme    
-
-
 
 #! class MebbeClause
 
@@ -687,17 +775,11 @@ class SwitchCase():
     def setOIC(self,lexeme):
         self.right_operand=lexeme
 
-
-    
-
 class DefaultCase():
     def __init__(self,lexeme):
         self.leaf_operand = lexeme
         self.codeblock = None
     
-    
-
-
 class Case():
     def __init__(self):
         self.leaf_operand=None
@@ -718,12 +800,6 @@ class Case():
     def setCodeBlock(self,codeblock):
         self.codeblock=codeblock
     
-        
-             
-    
-    
-
-
 class CodeBlock():
     def __init__(self):
         self.print = None
@@ -831,7 +907,13 @@ class CodeBlock():
                 else: 
                     clauseListOfStatements.append(statement)
 
+class Unary():
+    def __init__(self, lexeme):
+        self.unary_opt = lexeme
+        self.operand = None
 
+    def setOperand(self, operand):
+        self.operand = operand
 #!class functions, function call etc
 
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
@@ -1107,6 +1189,7 @@ def syntaxAnalysis(): # * function that executes syntax analysis
         statements = programRoot.getStatements()
         statementRoot = Statement()
         statementRoot.lookAhead(statements)
+        print(statementRoot.print)
 
         # print("ASTTAETMENTS")
         # for statement in programRoot.getStatements():
