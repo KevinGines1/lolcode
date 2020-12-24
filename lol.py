@@ -7,7 +7,7 @@ import re
 #* -- GUI INITIALIZATIONS --
 window = Tk()
 window.geometry("1200x750") #widthxheight
-window.title("Ang ganda ni Maam Kat LOLTERPRETER")
+window.title("LOLTERPRETER")
     
 # TODO : DOUBLE CHECK IF ELSE STATEMENT
 # TODO : INFINITE ARITY 
@@ -39,7 +39,7 @@ class SourceCode(): # * class for the source code
             "^IT$" : "Implicit Variable",
             "^WTF\?$":"Switch Case Start Delimiter",
             "^OMG$": "Case Specifier",
-            "^OMGWTF$": "Default Switch Case Specifiier",
+            "^OMGWTF$": "Default Switch Case Specifier",
             "^GTFO$" : "Break Statement",
             "^OIC$" : "Switch Case/IF-ELSE End Delimiter",
             "^IM IN YR$": "Loop Opening Delimeter",
@@ -217,9 +217,8 @@ class Statement():
         ifClauseActive = False
         elseClauseActive = False
         switchCaseActive= False
-        caseObjActive=False
+        caseObjActive = False
         defaultObjActive= False
-        #! take note of comments
         #! take note of the order of the statements
         for statement in statements:
             # for lexeme in statement: # ! maybe we can replace this part --
@@ -244,24 +243,28 @@ class Statement():
                 assignObj.lookAhead(statement)
                 self.assignment = assignObj
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* IF CONDITION
-                ifCondObj = Ifcond()
-                ifCondObj.lookAhead(statement)
+                # ! replace this 
+                # ifCondObj = Ifcond()
+                # ifCondObj.lookAhead(statement)
+                # ifElseFlag = True
+                # ! with this
+                boolObj = Boolean()
+                boolObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+            elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
+                # ! REFER TO THE VALUE OF IT NA LANG FOR THE CONDITION
+                ifElseObj = Ifelse(lexeme) # O RLY
+                ifElseObj.setCond(ifCondObj) # !  instead of doing this, add mo na lang dito ung value ni IT
                 ifElseFlag = True
-            elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
-                #IF-ELSE na obj
-                ifElseObj = Ifelse(lexeme)
-                #IF-ELSE na obj.setIfCond(ifCondObj)
-                ifElseObj.setCond(ifCondObj)
-                #TODO IF-ELSE na obj.lookAhead
             elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # * the true branch for if-else statement
-                ifClauseObject = IfClause(lexeme)
+                ifClauseObject = IfClause(lexeme) # YA RLY
                 ifClauseActive = True
-            elif ifClauseActive and ifElseFlag: # * codeblock inside true branch
+            elif ifClauseActive and ifElseFlag and elseClauseActive == False: # * codeblock inside true branch
                 # collect all statements until a NO WAI is encountered
                 if lexeme.getType() == "ELSE-IF delimiter":
                     # mebbe clause
                     pass
-                elif lexeme.getType() == "ELSE delimiter":
+                elif lexeme.getType() == "ELSE delimiter": # NO WAI
                     # trigger some flags
                     ifClauseActive = False
                     elseClauseActive = True
@@ -277,7 +280,7 @@ class Statement():
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else:
                     clauseListOfStatements.append(statement)
-            elif elseClauseActive and ifElseFlag: # *  codeblock inside False/else branch
+            elif elseClauseActive and ifElseFlag and ifClauseActive == False: # *  codeblock inside False/else branch
                 if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
                     # trigger some flags
                     ifElseFlag = False
@@ -289,29 +292,29 @@ class Statement():
                     elseClauseObject.setRightOperand(codeBlockObj)
                     # ifClause is complete so we set it as the attribute of the ifElseObj
                     ifElseObj.setElseClause(ifClauseObject)
-                    # we create the elseClause object since a NO WAI is encountered
                     ifElseObj.setOIC(lexeme)
+                    self.ifelse = ifElseObj # assign the completed if else statement to the attribute
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
                     clauseListOfStatements.append(statement)
             elif lexeme.getType() == "Switch Case Start Delimiter" and not switchCaseActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* SWITCH CASE
                 # encountered a switch case start so this triggers a flag
-                switchCaseActive= True
+                switchCaseActive = True
                 # create a switchCase Object
-                switchCaseObject= SwitchCase(lexeme)
+                switchCaseObject = SwitchCase(lexeme)
 
-            elif switchCaseActive and lexeme.getType() in ["Case Specifier", "Default Switch Case Specifiier"] and not caseObjActive: #* CASES IN A SWITCH CASE
+            elif switchCaseActive and lexeme.getType() in ["Case Specifier", "Default Switch Case Specifier"] and not caseObjActive and not defaultObjActive: #* CASES IN A SWITCH CASE
                 if lexeme.getType() == "Case Specifier": # case
                     # a CASE is encountered, trigger some flags
-                    caseObjActive= True
+                    caseObjActive = True
                     # create an object
                     caseObj = Case()
                     caseObj.lookAhead(statement) # assign the case keyword and the literal value for the case object
-                elif lexeme.getType() == "Default Switch Case Specifiier": # default case
+                elif lexeme.getType() == "Default Switch Case Specifier": # default case
                     # default case is encountered
                     defaultObj=DefaultCase(lexeme)
                     # trigger some flags
-                    defaultObjActive=True
+                    defaultObjActive = True
                     
             elif switchCaseActive and defaultObjActive and not caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* end of a switch case
                 if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter":
@@ -321,31 +324,32 @@ class Statement():
                     codeBlockObj.lookAhead(caseListofStatements)
                     # connect the codeblock to the default case object
                     defaultObj.setCodeBlock(codeBlockObj)
-                    defaultObjActive = False
                     # connect the default case to the switch case object
                     switchCaseObject.setDefaultCase(defaultObj)
                     switchCaseObject.setOIC(lexeme)
                     # trigger some flags
-                    switchCaseActive=False
+                    defaultObjActive = False
+                    switchCaseActive = False
                     # clear the list of statements
                     caseListofStatements = []
+                    self.switchcase = switchCaseObject # assign the completed switchCaseObject to the attribute of the statement
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)                
 
-            elif switchCaseActive and caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* break statement in a case is encountered
+            elif switchCaseActive and caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive and not defaultObjActive: #* break statement in a case is encountered
                 if lexeme.getType()=="Break Statement":
                     # if the delimiter for a case in a switch case is encountered
                     # we create a codeblock that will contain the statements
-                    codeBlockObj= CodeBlock()
+                    codeBlockObj = CodeBlock()
                     codeBlockObj.lookAhead(caseListofStatements)
                     # we connect the codeblock to the case object
-                    caseObj.setCodeBlock(codeBlockObj)
+                    caseObj.setCodeBlock(codeBlockObj) 
                     # we set the break statement to the case object as well
                     caseObj.setGTFO(lexeme)
-                    caseObjActive=False
+                    caseObjActive = False
                     # we connect the case to the switch case object
-                    switchCaseObject.setCase(caseObj)
+                    switchCaseObject.setCase(caseObj) # we are appending the case codeblock to the list of case codeblocks attribute of the switchCaseObj
                     # clear the list of statements
                     caseListofStatements=[]
                 else:
@@ -769,7 +773,7 @@ class SwitchCase():
     def setCase(self,caseObj):
         self.case.append(caseObj)
     
-    def setDefault(self,caseObj):
+    def setDefaultCase(self,caseObj):
         self.default=caseObj
 
     def setOIC(self,lexeme):
@@ -779,6 +783,9 @@ class DefaultCase():
     def __init__(self,lexeme):
         self.leaf_operand = lexeme
         self.codeblock = None
+
+    def setCodeBlock(self,codeblock):
+        self.codeblock=codeblock
     
 class Case():
     def __init__(self):
@@ -1189,7 +1196,7 @@ def syntaxAnalysis(): # * function that executes syntax analysis
         statements = programRoot.getStatements()
         statementRoot = Statement()
         statementRoot.lookAhead(statements)
-        print(statementRoot.print)
+        print(statementRoot.switchcase)
 
         # print("ASTTAETMENTS")
         # for statement in programRoot.getStatements():
