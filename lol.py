@@ -9,7 +9,6 @@ window = Tk()
 window.geometry("1200x750") #widthxheight
 window.title("LOLTERPRETER")
     
-# TODO : INFINITE ARITY 
 #* -- CLASSES --
 class SourceCode(): # * class for the source code
     # constructor
@@ -642,10 +641,6 @@ class Boolean():
                 unaryObj = Unary(lexeme)
                 unaryObj.setOperand(operand)
                 stack.append(unaryObj)
-            # ! IMPLEMENT INFINITE ARITY
-            # elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]:
-                # bool2Obj = Boolean2(lexeme, stack)
-
 
 class Boolean2():
     def __init__(self):
@@ -657,7 +652,14 @@ class Boolean2():
         stack = []
 
         for index in range(-1, 0):
-            pass
+            lexeme = statement[index]
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]:
+                stack.append(lexeme)
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]:
+                self.boolop2 = lexeme # set the name of the operand
+                #get rid of the [] at the beginning
+                stack.pop(0)
+                self.operands = stack
 
 class Comparison():
     def __init__(self, lexeme):
