@@ -253,7 +253,7 @@ class Statement():
                 # ifCondObj.lookAhead(statement)
                 # ifElseFlag = True
                 # ! with this
-                boolObj = Boolean()
+                boolObj = Boolean(lexeme)
                 boolObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
             elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
@@ -623,20 +623,20 @@ class Boolean():
         for index in range(-1, 0):
             lexeme = statement[index]
 
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]:
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # WIN/FAIL , VARIDENT
                 stack.append(lexeme)
-            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]:
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
                 right_operand = stack.pop()
                 left_operand = stack.pop()
                 if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
                     self.left_operand = left_operand
                     self.right_operand = right_operand
                 else: # nested boolean
-                    boolObj = Comparison(lexeme)
+                    boolObj = Boolean(lexeme)
                     boolObj.setLeftOperand(left_operand)
                     boolObj.setRightOperand(right_operand)
                     stack.append(boolObj)
-            elif lexeme.getType() == "Not operator":
+            elif lexeme.getType() == "Not operator": # NOT
                 operand = stack.pop()
                 unaryObj = Unary(lexeme)
                 unaryObj.setOperand(operand)
@@ -647,20 +647,29 @@ class Boolean2():
         self.boolop2 = None
         self.operands = None
 
-    def lookAhead(self, statements):
+    def lookAhead(self, statement):
 
         stack = []
 
         for index in range(-1, 0):
             lexeme = statement[index]
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]:
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # basic operand
                 stack.append(lexeme)
-            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]:
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]: # infinite arity operators
                 self.boolop2 = lexeme # set the name of the operand
                 #get rid of the [] at the beginning
                 stack.pop(0)
                 self.operands = stack
-
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
+                booleanObj = Boolean(lexeme)
+                booleanObj.setRightOperand(stack.pop())
+                booleanObj.setLeftOperand(stack.pop())
+                stack.append(booleanObj)
+            elif lexeme.getType() == "Not operator": # NOT
+                unaryObj = Unary(lexeme)
+                unaryObj.setOperand(stack.pop())
+                stack.append(unaryObj)
+                
 class Comparison():
     def __init__(self, lexeme):
         self.compoperator=lexeme
@@ -1229,126 +1238,6 @@ def syntaxAnalysis(): # * function that executes syntax analysis
         # for statement in programRoot.getStatements():
         #     for lexeme in statement:
         #         print(lexeme.getActual())
-
-def visibleOperand(lexeme): # * for visible operands only
-
-    if isLiteral(lexeme):
-        return True
-    elif isExpr(lexeme):
-        return True
-    elif lexeme.getType() == "Variable Identifier":
-        return True
-    else:
-        return False
-
-def isExpr(lexeme):
-    # check if arithmetic
-    if isArithmetic(lexeme):
-        return True
-    # check if boolean
-    elif isBoolean(lexeme):
-        return True
-    # check if comparison
-    elif isComparison(lexeme):
-        return True
-    return False
-    
-def isArithmetic(lexeme):
-    operation1 = theCode.getOperations().keys()
-
-    # for index in range(7): # operation 1
-    #     if lexeme.getActual() == operation1[index]:
-    #         return True
-    if lexeme.getActual() in operation1:
-        return True
-
-    if isOperand(lexeme): # operand
-        return True
-    elif lexeme.getType() == "Operand Separator":
-        return True
-    return False
-
-
-def isBoolean(lexeme):
-
-    #check if first type of boolean
-    booloperation1 = theCode.getOperations()[7:10]
-
-    for operation in booloperation1: # operation 1
-        if lexeme.getActual() == operation:
-            return True
-
-    if isBoolOperand1(lexeme): # operand
-        return True
-    elif lexeme.getType() == "Operand Separator":
-        return True
-
-    #check if second type of boolean
-    if isUnary(lexeme):
-        return True
-
-    # check if third type of boolean
-    if isBoolean2(lexeme):
-        return True
-    return False
-
-def isBoolean2(lexeme):
-    booloperation2 = theCode.getOperations()[11:13]
-
-    for operation in booloperation2: # operation 1
-        if lexeme.getActual() == operation:
-            return True
-
-    if lexeme.getType() == "Variable Identifier":
-        return True
-    elif lexeme.getType() == "TROOF Literal":
-        return True
-    elif lexeme.getType() == "End of Boolean Statement":
-        return True
-    elif lexeme.getType() == "Operand Separator":
-        return True
-    return False
-
-    # ! incomplete pa 
-    # ! booleanf2only
-    
-
-def isBoolOperand1(lexeme):
-    if lexeme.getType() == "Variable Identifier":
-        return True
-    elif lexeme.getType() == "TROOF Literal":
-        return True
-    elif isBoolean(lexeme):
-        return True
-    return False
-
-def isOperand(lexeme):
-    # * pwede ata ipagsama ? gamit ng or statement? 
-    if lexeme.getType() == "Variable Identifier":
-        return True
-    elif lexeme.getType() == "NUMBR Literal":
-        return True
-    elif lexeme.getType() == "NUMBAR Literal":
-        return True
-    elif isArithmetic(lexeme):
-        return True
-    return False
-
-def isLiteral(lexeme):
-    literals = theCode.getLiterals()
-    values = literals.values()
-
-    for value in values:
-        if lexeme.getType() == value:
-            return True
-    return False
-
-def isUnary(lexeme):
-    lexemeType = lexeme.getType()
-    if lexemeType == "Loop increment" or lexemeType == "Loop decrement" or lexemeType == "Not operator":
-        return True
-    return False 
-
 
 # * ---------------------------------------------------------------------------------------------------------------------
 
