@@ -9,7 +9,6 @@ window = Tk()
 window.geometry("1200x750") #widthxheight
 window.title("LOLTERPRETER")
     
-# TODO : DOUBLE CHECK IF ELSE STATEMENT
 # TODO : INFINITE ARITY 
 #* -- CLASSES --
 class SourceCode(): # * class for the source code
@@ -71,7 +70,7 @@ class SourceCode(): # * class for the source code
         }
         self.operations = {
             "^SUM OF$": "Addition Operator" , 
-            "^DIFF OF$": "Substraction Operator",  
+            "^DIFF OF$": "Subtraction Operator",  
             "^PRODUKT OF$": "Multiplication Operator", 
             "^QUOSHUNT OF$": "Division Operator", #Sum of to Quoshunt of
             "^MOD OF$": "Modulo Operator", 
@@ -144,7 +143,6 @@ class Lexeme():
     def setValue(self, value):
         self.value = value
     
-
 class Program():
     def __init__(self,lexemes,hai_lexeme,kthxbye_lexeme):
         self.HAI=hai_lexeme
@@ -178,10 +176,6 @@ class Program():
     def getStatements(self):
         return self.statement
 
-#lookahead method
-
-        
-    
 class Statement():
     def __init__(self):
         #! take note of multiple instances of the same statement
@@ -194,13 +188,19 @@ class Statement():
         self.loop=None
         self.function=None
         self.functioncall=None
+
+        #!
+        self.boolObj = None
+        self.compObj = None
+        self.arithObj = None
+        self.bool2Obj = None
         # self.statement=None
         # self.linebreak = None
 
     def lookAhead(self, statements):
         # * holders
         # statementHolder = []
-        ifCondObj = None
+        ifCondObj = None # !
         ifElseObj = None
         caseObj= None
         defaultObj= None
@@ -210,9 +210,15 @@ class Statement():
         clauseListOfStatements = []
         caseListofStatements= []
 
+        #! 
+        boolObj = None
+        compObj = None
+        arithObj = None
+        bool2Obj = None
+
         #* flags
-        multiline_comment_active = False
-        printFlag = False
+        multiline_comment_active = False #!
+        printFlag = False #!
         ifElseFlag = False
         ifClauseActive = False
         elseClauseActive = False
@@ -242,7 +248,7 @@ class Statement():
                 assignObj = Assignment()
                 assignObj.lookAhead(statement)
                 self.assignment = assignObj
-            elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* IF CONDITION
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* BOOLEAN BOTH OF, EITHER OF, WON OF
                 # ! replace this 
                 # ifCondObj = Ifcond()
                 # ifCondObj.lookAhead(statement)
@@ -250,6 +256,18 @@ class Statement():
                 # ! with this
                 boolObj = Boolean()
                 boolObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+            elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
+                compObj = Comparison()
+                compObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* ARITHMETIC ADD, SUB, MULT, DIV, MOD, MAX, MIN
+                arithObj = Arithmetic()
+                arithObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* BOOLEAN 2 WITH INFINITE ARITY
+                bool2Obj = Boolean2()
+                bool2Obj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
             elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
                 # ! REFER TO THE VALUE OF IT NA LANG FOR THE CONDITION
@@ -355,8 +373,7 @@ class Statement():
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)
-
-
+            
 class Print():
     def __init__(self):
         self.left_operand=None
@@ -414,8 +431,7 @@ class VisibleOperand():
         if expr_active:
             exprObj.setExpr(expr_holder) # !
 
-
-# TODO : expr
+# TODO : expr -- di na ata need itong class na ito?
 class Expr():
     def __init__(self):
         self.expr = None
@@ -524,7 +540,6 @@ class Assignment():
         if expr_active:
             exprObj.setExpr(expr_holder) # !
             
-
 #! class for concatenation
 class Ifcond():
     def __init__(self):
@@ -587,7 +602,6 @@ class ElseClause():
     def setRightOperand(self, codeBlock):
         self.right_operand = codeBlock
 
-
 #! make booleans
 class Boolean():
     def __init__(self, lexeme):
@@ -630,8 +644,20 @@ class Boolean():
                 stack.append(unaryObj)
             # ! IMPLEMENT INFINITE ARITY
             # elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]:
+                # bool2Obj = Boolean2(lexeme, stack)
 
 
+class Boolean2():
+    def __init__(self):
+        self.boolop2 = None
+        self.operands = None
+
+    def lookAhead(self, statements):
+
+        stack = []
+
+        for index in range(-1, 0):
+            pass
 
 class Comparison():
     def __init__(self, lexeme):
@@ -684,7 +710,6 @@ class Comparison():
                     comparisonObj.setRightOperand(right_operand)
                     stack.append(comparisonObj)
             
-
 class Operand(): #! no need na ata
     def __init__(self):
         self.leaf_operand= None # varident, numbr, numbr, arithmetic 
@@ -711,7 +736,7 @@ class Operand(): #! no need na ata
 class Arithmetic():
     def __init__(self, operation):
         self.operation1 = operation
-        self.an= None
+        self.an= None #!
         self.left_operand= None
         self.right_operand= None
     
@@ -1202,7 +1227,6 @@ def syntaxAnalysis(): # * function that executes syntax analysis
         # for statement in programRoot.getStatements():
         #     for lexeme in statement:
         #         print(lexeme.getActual())
-
 
 def visibleOperand(lexeme): # * for visible operands only
 
