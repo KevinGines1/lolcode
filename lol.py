@@ -946,7 +946,7 @@ class CodeBlock():
                 self.input = inputObj #!
                 self.statements.append(inputObj)
             # elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
-            elif lexeme.getType() in ["Variable Identifier", "Implicit Variable"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+            elif lexeme.getType() in ["Variable Identifier", "Implicit Variable", "Identifier"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
                 assignObj = Assignment()
                 assignObj.lookAhead(statement)
                 self.assignment = assignObj #! INCLUDED THE IT R <LITERAL> ASSIGNMENT
