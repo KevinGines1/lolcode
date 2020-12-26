@@ -414,7 +414,9 @@ class Print():
         visibleOperandObj.lookAhead(operandHolder)
         self.right_operand = visibleOperandObj
 
-# TODO - ARITHMETIC SA VISIBLE OPERAND
+    def execute(self):
+        pass
+
 class VisibleOperand():
     def __init__(self):
         # self.yarn=None
@@ -426,34 +428,67 @@ class VisibleOperand():
     # ! take note order of the operands
     def lookAhead(self, listOfLexemes):
         string_delimiter_flag = False
-        literalObj = None
-        exprObj = None
-        expr_active = False
+
+        # flags
+        arithmeticFlag = False
+        booleanFlag = False
+        boolean2Flag = False
+        comparisonFlag = False
+
+        #object holders
+        arithObj = None
+        boolObj = None
+        bool2Obj = None
+        compObj = None
+        
         expr_holder = []
         for lexeme in listOfLexemes:
-            if lexeme.getType()=="String Delimiter" and string_delimiter_flag == False:
+            if lexeme.getType()=="String Delimiter" and string_delimiter_flag == False and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 string_delimiter_flag = True
                 literalObj = Literal()
-            elif string_delimiter_flag:
+            elif string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 literalObj.setValue(lexeme)
                 self.literal=literalObj
-            elif lexeme.getType()=="String Delimiter" and string_delimiter_flag:
+            elif lexeme.getType()=="String Delimiter" and string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 string_delimiter_flag = False
-            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not string_delimiter_flag:
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 literalObj = Literal()
                 literalObj.setValue(lexeme)
                 self.literal=literalObj
-            elif lexeme.getType() == "Variable Identifier":
+            elif lexeme.getType() == "Variable Identifier" and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 self.varident = lexeme
-            elif expr_active:
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # arithmetic
+                arithmeticFlag = True
+                arithObj = Arithmetic(lexeme)
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # boolean
+                booleanFlag = True
+                boolObj = Boolean(lexeme)
+            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # comparison
+                comparisonFlag = True
+                compObj = Comparison(lexeme)
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # comparison
+                boolean2Flag = True
+                bool2Obj = Boolean2(lexeme)
+            elif arithmeticFlag or booleanFlag or comparisonFlag or boolean2Flag: 
                 expr_holder.append(lexeme)
-            else: 
-                expr_active = True
-                exprObj = Expr()
-        if expr_active:
-            exprObj.setExpr(expr_holder) # !
+        
+        if arithmeticFlag and not booleanFlag and not boolean2Flag and not comparisonFlag:
+            arithObj.lookAhead(expr_holder)
+            self.expr = arithObj
+        elif booleanFlag and not arithmeticFlag and not boolean2Flag and not comparisonFlag:
+            boolObj.lookAhead(expr_holder)
+            self.expr = boolObj
+        elif boolean2Flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            bool2Obj.lookAhead(expr_holder)
+            self.expr = bool2Obj
+        elif comparisonFlag and not arithmeticFlag and not boolean2Flag and not booleanFlag:
+            compObj.lookAhead(expr_holder)
+            self.expr = compObj
 
+# TODO - 1. update symbol table
+# TODO - 2. execute method ng bawat class
 # TODO : expr -- di na ata need itong class na ito?
+
 class Expr():
     def __init__(self):
         self.expr = None
@@ -563,7 +598,7 @@ class Assignment():
             exprObj.setExpr(expr_holder) # !
             
 #! class for concatenation
-class Ifcond():
+class Ifcond(): # ! di na rin ata need ito
     def __init__(self):
         self.boolean=None
         self.comparison=None
