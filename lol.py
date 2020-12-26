@@ -19,7 +19,7 @@ class SourceCode(): # * class for the source code
             "^KTHXBYE$": "Code End Delimiter",
             "^BTW$":"Single Line Comment Delimiter",
             "^OBTW$":"Multiline Comment Delimiter",
-            "^TLDR$":"Comment Delimiter", #Delimiters 
+            "^TLDR$":"Multi-Line Comment Delimiter", #Delimiters 
             "^I HAS A$":"Variable Declaration",
             "^ITZ$":"Variable Assignment",
             "^R$":"Assignment Operation Keyword", #IHAS A to R
@@ -77,7 +77,7 @@ class SourceCode(): # * class for the source code
             "^SMALLR OF$": "Minimum Operator",  #MOD of to Smallr of
             "^BOTH OF$": "and operator", 
             "^EITHER OF$": "or operator",
-            "^WON OF$": "XOR Operator",
+            "^WON OF$": "XOR operator",
             "^NOT$": "Not operator",
             "^ANY OF$": "Infinite arity or operator", 
             "^ALL OF$": "Infinite arity and operator",  #! #Both of to ALL OF
@@ -154,19 +154,14 @@ class Program():
         statementHolder = []
         multiline_comment_active = False
         for lexeme in lexemes:
-            if lexeme.getType() == "Single Line Delimiter" and multiline_comment_active == False:
-                continue # if single line comment, proceed to next lexeme
-            elif lexeme.getType() == "Multiline Comment Delimiter":
+            if lexeme.getType() == "Multiline Comment Delimiter" and not multiline_comment_active:
                 multiline_comment_active = True
-                continue
-            elif multiline_comment_active:
-                continue
-            elif lexeme.getType() == "Comment Delimiter":
+            elif lexeme.getType() == "Multi-Line Comment Delimiter" and multiline_comment_active:
                 multiline_comment_active = False
-                continue
-            elif lexeme.getType() != "Line Break":
+                # continue
+            elif lexeme.getType() != "Line Break" and not multiline_comment_active:
                 statementHolder.append(lexeme)
-            elif lexeme.getType() == "Line Break":
+            elif lexeme.getType() == "Line Break" and not multiline_comment_active:
                 # statementHolder.append(lexeme)
                 self.statement.append(statementHolder)
                 statementHolder = []
@@ -193,6 +188,9 @@ class Statement():
         self.compObj = None
         self.arithObj = None
         self.bool2Obj = None
+
+        # analyzed statements in order
+        self.statements = []
         # self.statement=None
         # self.linebreak = None
 
@@ -230,23 +228,34 @@ class Statement():
             if statement == []:
                 continue
             lexeme = statement[0] #! -- with this one
-            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and printFlag ==False: #* PRINT
+            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and switchCaseActive == False and caseObjActive == False and defaultObjActive == False: #* PRINT
                 printObj = Print()
                 printObj.lookAhead(statement)
-                self.print = printObj
+                self.print = printObj #!
+                self.statements.append(printObj)
                 # self.print.append(statement)
-            elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* VAR DEC
+            elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and switchCaseActive == False and caseObjActive == False and defaultObjActive == False: #* VAR DEC
                 vardecObj = Vardec()
                 vardecObj.lookAhead(statement)
-                self.vardec = vardecObj
+                self.vardec = vardecObj #!
+                self.statements.append(vardecObj)
             elif lexeme.getType() == "User input" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* GIMMEH
                 inputObj = Input()
                 inputObj.lookAhead(statement)
-                self.input = inputObj
-            elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+                self.input = inputObj #!
+                self.statements.append(inputObj)
+            # elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+            elif lexeme.getType() in ["Variable Identifier", "Implicit Variable", "Identifier"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
                 assignObj = Assignment()
                 assignObj.lookAhead(statement)
-                self.assignment = assignObj
+                self.assignment = assignObj #! INCLUDED THE IT R <LITERAL> ASSIGNMENT
+                self.statements.append(assignObj)
+            elif lexeme.getType() == "Not operator" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* UNARY OPERATOR
+                print("FOUND UNARY")
+                unaryObj = Unary(lexeme)
+                unaryObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(unaryObj)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* BOOLEAN BOTH OF, EITHER OF, WON OF
                 # ! replace this 
                 # ifCondObj = Ifcond()
@@ -256,18 +265,22 @@ class Statement():
                 boolObj = Boolean(lexeme)
                 boolObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(boolObj)
             elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
-                compObj = Comparison()
+                compObj = Comparison(lexeme)
                 compObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(compObj)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* ARITHMETIC ADD, SUB, MULT, DIV, MOD, MAX, MIN
-                arithObj = Arithmetic()
+                arithObj = Arithmetic(lexeme)
                 arithObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(arithObj)
             elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* BOOLEAN 2 WITH INFINITE ARITY
                 bool2Obj = Boolean2()
                 bool2Obj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(bool2Obj)
             elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
                 # ! REFER TO THE VALUE OF IT NA LANG FOR THE CONDITION
                 ifElseObj = Ifelse(lexeme) # O RLY
@@ -310,7 +323,9 @@ class Statement():
                     # ifClause is complete so we set it as the attribute of the ifElseObj
                     ifElseObj.setElseClause(ifClauseObject)
                     ifElseObj.setOIC(lexeme)
-                    self.ifelse = ifElseObj # assign the completed if else statement to the attribute
+                    # assign the completed if else statement to the attribute
+                    self.ifelse = ifElseObj #!
+                    self.statements.append(ifElseObj)
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
                     clauseListOfStatements.append(statement)
@@ -349,7 +364,10 @@ class Statement():
                     switchCaseActive = False
                     # clear the list of statements
                     caseListofStatements = []
-                    self.switchcase = switchCaseObject # assign the completed switchCaseObject to the attribute of the statement
+                    # assign the completed switchCaseObject to the attribute of the statement
+                    self.switchcase = switchCaseObject #!
+                    self.statements.append(switchCaseObject)
+                    print("WTF",self.switchcase)
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)                
@@ -372,12 +390,16 @@ class Statement():
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)
+            else:
+                print(lexeme.getType(), lexeme.getActual())
             
+    def getProcessedStatements(self):
+        return self.statements
+
 class Print():
     def __init__(self):
         self.left_operand=None
         self.right_operand=[]  #may branch
-        self.linebreak = None
 
     #! take note of comments
     def lookAhead(self, statement):
@@ -392,6 +414,7 @@ class Print():
         visibleOperandObj.lookAhead(operandHolder)
         self.right_operand = visibleOperandObj
 
+# TODO - ARITHMETIC SA VISIBLE OPERAND
 class VisibleOperand():
     def __init__(self):
         # self.yarn=None
@@ -416,7 +439,7 @@ class VisibleOperand():
                 self.literal=literalObj
             elif lexeme.getType()=="String Delimiter" and string_delimiter_flag:
                 string_delimiter_flag = False
-            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not string_delimiter_flag:
                 literalObj = Literal()
                 literalObj.setValue(lexeme)
                 self.literal=literalObj
@@ -601,7 +624,6 @@ class ElseClause():
     def setRightOperand(self, codeBlock):
         self.right_operand = codeBlock
 
-#! make booleans
 class Boolean():
     def __init__(self, lexeme):
         self.booloperation1 = lexeme
@@ -647,6 +669,9 @@ class Boolean2():
         self.boolop2 = None
         self.operands = None
 
+    def setOperand(self, operands):
+        self.operands = operands
+
     def lookAhead(self, statement):
 
         stack = []
@@ -659,7 +684,13 @@ class Boolean2():
                 self.boolop2 = lexeme # set the name of the operand
                 #get rid of the [] at the beginning
                 stack.pop(0)
-                self.operands = stack
+                if len(stack) == (len(statement)-1): # exclude the operator
+                    self.operands = stack
+                else:# if nested infinite arity is encountered
+                    bool2 = Boolean2
+                    bool2.setOperand(stack)
+                    stack.clear()
+                    stack.append(bool2)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
                 booleanObj = Boolean(lexeme)
                 booleanObj.setRightOperand(stack.pop())
@@ -845,78 +876,126 @@ class Case():
     
 class CodeBlock():
     def __init__(self):
-        self.print = None
-        self.vardec = None
-        self.expr = None
-        self.assignment = None
-        self.ifelse = None
-        self.switchcase = None
-        self.loop = None
-        self.functioncall = None
-        self.codeblock = None
-        self.linebreak = None
+        #! take note of multiple instances of the same statement
+        self.print= None
+        self.vardec=None
+        self.input=None
+        self.assignment=None
+        self.ifelse=None
+        self.switchcase=None
+        self.loop=None
+        self.function=None
+        self.functioncall=None
+
+        #!
+        self.boolObj = None
+        self.compObj = None
+        self.arithObj = None
+        self.bool2Obj = None
+        # self.statement=None
+        # self.linebreak = None
 
     def lookAhead(self, statements):
         # * holders
         # statementHolder = []
-        ifCondObj = None
+        ifCondObj = None # !
         ifElseObj = None
+        caseObj= None
+        defaultObj= None
         ifClauseObject = None
         elseClauseObject = None
+        switchCaseObject=None
         clauseListOfStatements = []
+        caseListofStatements= []
+
+        #! 
+        boolObj = None
+        compObj = None
+        arithObj = None
+        bool2Obj = None
 
         #* flags
-        multiline_comment_active = False
-        printFlag = False
+        multiline_comment_active = False #!
+        printFlag = False #!
         ifElseFlag = False
         ifClauseActive = False
         elseClauseActive = False
-        # TODO create if else flag for multiple lines kasi ung if else
-        #! take note of comments
+        switchCaseActive= False
+        caseObjActive = False
+        defaultObjActive= False
         #! take note of the order of the statements
         for statement in statements:
             # for lexeme in statement: # ! maybe we can replace this part --
             if statement == []:
                 continue
             lexeme = statement[0] #! -- with this one
-            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* PRINT
+            if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and switchCaseActive == False and caseObjActive == False and defaultObjActive == False: #* PRINT
                 printObj = Print()
                 printObj.lookAhead(statement)
-                self.print = printObj
+                self.print = printObj #!
+                self.statements.append(printObj)
                 # self.print.append(statement)
-            elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* VAR DEC
+            elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and switchCaseActive == False and caseObjActive == False and defaultObjActive == False: #* VAR DEC
                 vardecObj = Vardec()
                 vardecObj.lookAhead(statement)
-                self.vardec = vardecObj
+                self.vardec = vardecObj #!
+                self.statements.append(vardecObj)
             elif lexeme.getType() == "User input" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* GIMMEH
                 inputObj = Input()
                 inputObj.lookAhead(statement)
-                self.input = inputObj
-            elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+                self.input = inputObj #!
+                self.statements.append(inputObj)
+            # elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
+            elif lexeme.getType() in ["Variable Identifier", "Implicit Variable"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
                 assignObj = Assignment()
                 assignObj.lookAhead(statement)
-                self.assignment = assignObj
-            elif lexeme.getType() in ["and operator", "or operator", "XOR operator", "Equal comparison Operator", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* IF CONDITION
-                ifCondObj = Ifcond()
-                ifCondObj.lookAhead(statement)
+                self.assignment = assignObj #! INCLUDED THE IT R <LITERAL> ASSIGNMENT
+                self.statements.append(assignObj)
+            elif lexeme.getType() == "Not operator" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* UNARY OPERATOR
+                print("FOUND UNARY")
+                unaryObj = Unary(lexeme)
+                unaryObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(unaryObj)
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* BOOLEAN BOTH OF, EITHER OF, WON OF
+                # ! replace this 
+                # ifCondObj = Ifcond()
+                # ifCondObj.lookAhead(statement)
+                # ifElseFlag = True
+                # ! with this
+                boolObj = Boolean(lexeme)
+                boolObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(boolObj)
+            elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
+                compObj = Comparison(lexeme)
+                compObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(compObj)
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* ARITHMETIC ADD, SUB, MULT, DIV, MOD, MAX, MIN
+                arithObj = Arithmetic(lexeme)
+                arithObj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(arithObj)
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* BOOLEAN 2 WITH INFINITE ARITY
+                bool2Obj = Boolean2()
+                bool2Obj.lookAhead(statement)
+                # TODO: evaluate and add the value to the symbol table under IT
+                self.statements.append(bool2Obj)
+            elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
+                # ! REFER TO THE VALUE OF IT NA LANG FOR THE CONDITION
+                ifElseObj = Ifelse(lexeme) # O RLY
+                ifElseObj.setCond(ifCondObj) # !  instead of doing this, add mo na lang dito ung value ni IT
                 ifElseFlag = True
-            elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
-                #IF-ELSE na obj
-                ifElseObj = Ifelse(lexeme)
-                #IF-ELSE na obj.setIfCond(ifCondObj)
-                ifElseObj.setCond(ifCondObj)
-                #TODO IF-ELSE na obj.lookAhead
-            elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # the true branch for if-else statement
-                ifClauseObject = IfClause(lexeme)
+            elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # * the true branch for if-else statement
+                ifClauseObject = IfClause(lexeme) # YA RLY
                 ifClauseActive = True
-
-
-            elif ifClauseActive and ifElseFlag:  # codeblock inside true branch
+            elif ifClauseActive and ifElseFlag and elseClauseActive == False: # * codeblock inside true branch
                 # collect all statements until a NO WAI is encountered
                 if lexeme.getType() == "ELSE-IF delimiter":
                     # mebbe clause
                     pass
-                elif lexeme.getType() == "ELSE delimiter":
+                elif lexeme.getType() == "ELSE delimiter": # NO WAI
                     # trigger some flags
                     ifClauseActive = False
                     elseClauseActive = True
@@ -929,10 +1008,10 @@ class CodeBlock():
                     ifElseObj.setIfClause(ifClauseObject)
                     # we create the elseClause object since a NO WAI is encountered
                     elseClauseObject = ElseClause(lexeme)
-                    clauseListOfStatements = []  # clear the clauseListOfStatements holder
+                    clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else:
                     clauseListOfStatements.append(statement)
-            elif elseClauseActive and ifElseFlag: # codeblock inside F/else branch
+            elif elseClauseActive and ifElseFlag and ifClauseActive == False: # *  codeblock inside False/else branch
                 if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter": # end of the clause is encountered
                     # trigger some flags
                     ifElseFlag = False
@@ -944,11 +1023,76 @@ class CodeBlock():
                     elseClauseObject.setRightOperand(codeBlockObj)
                     # ifClause is complete so we set it as the attribute of the ifElseObj
                     ifElseObj.setElseClause(ifClauseObject)
-                    # we create the elseClause object since a NO WAI is encountered
                     ifElseObj.setOIC(lexeme)
+                    # assign the completed if else statement to the attribute
+                    self.ifelse = ifElseObj #!
+                    self.statements.append(ifElseObj)
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
                     clauseListOfStatements.append(statement)
+            elif lexeme.getType() == "Switch Case Start Delimiter" and not switchCaseActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* SWITCH CASE
+                # encountered a switch case start so this triggers a flag
+                switchCaseActive = True
+                # create a switchCase Object
+                switchCaseObject = SwitchCase(lexeme)
+
+            elif switchCaseActive and lexeme.getType() in ["Case Specifier", "Default Switch Case Specifier"] and not caseObjActive and not defaultObjActive: #* CASES IN A SWITCH CASE
+                if lexeme.getType() == "Case Specifier": # case
+                    # a CASE is encountered, trigger some flags
+                    caseObjActive = True
+                    # create an object
+                    caseObj = Case()
+                    caseObj.lookAhead(statement) # assign the case keyword and the literal value for the case object
+                elif lexeme.getType() == "Default Switch Case Specifier": # default case
+                    # default case is encountered
+                    defaultObj=DefaultCase(lexeme)
+                    # trigger some flags
+                    defaultObjActive = True
+                    
+            elif switchCaseActive and defaultObjActive and not caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive: #* end of a switch case
+                if lexeme.getType() == "Switch Case/IF-ELSE End Delimiter":
+                    # if the end delimiter of a switch case is encountered, 
+                    # create a codeblock object that will contain the collected statements
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(caseListofStatements)
+                    # connect the codeblock to the default case object
+                    defaultObj.setCodeBlock(codeBlockObj)
+                    # connect the default case to the switch case object
+                    switchCaseObject.setDefaultCase(defaultObj)
+                    switchCaseObject.setOIC(lexeme)
+                    # trigger some flags
+                    defaultObjActive = False
+                    switchCaseActive = False
+                    # clear the list of statements
+                    caseListofStatements = []
+                    # assign the completed switchCaseObject to the attribute of the statement
+                    self.switchcase = switchCaseObject #!
+                    self.statements.append(switchCaseObject)
+                    print("WTF",self.switchcase)
+                else:
+                    # collect the statements
+                    caseListofStatements.append(statement)                
+
+            elif switchCaseActive and caseObjActive and not ifElseFlag and not ifClauseActive and not elseClauseActive and not defaultObjActive: #* break statement in a case is encountered
+                if lexeme.getType()=="Break Statement":
+                    # if the delimiter for a case in a switch case is encountered
+                    # we create a codeblock that will contain the statements
+                    codeBlockObj = CodeBlock()
+                    codeBlockObj.lookAhead(caseListofStatements)
+                    # we connect the codeblock to the case object
+                    caseObj.setCodeBlock(codeBlockObj) 
+                    # we set the break statement to the case object as well
+                    caseObj.setGTFO(lexeme)
+                    caseObjActive = False
+                    # we connect the case to the switch case object
+                    switchCaseObject.setCase(caseObj) # we are appending the case codeblock to the list of case codeblocks attribute of the switchCaseObj
+                    # clear the list of statements
+                    caseListofStatements=[]
+                else:
+                    # collect the statements
+                    caseListofStatements.append(statement)
+            else:
+                print(lexeme.getType(), lexeme.getActual())
 
 class Unary():
     def __init__(self, lexeme):
@@ -957,6 +1101,31 @@ class Unary():
 
     def setOperand(self, operand):
         self.operand = operand
+
+    def lookAhead(self, statement):
+
+        stack = []
+
+        for index in range(-1, 0):
+            lexeme = statement[index]
+
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # WIN/FAIL , VARIDENT
+                stack.append(lexeme)
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+                boolObj = Boolean(lexeme)
+                boolObj.setLeftOperand(left_operand)
+                boolObj.setRightOperand(right_operand)
+                stack.append(boolObj)
+            elif lexeme.getType() == "Not operator": # NOT
+                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                    self.operand = stack.pop()
+                else: # nested unary 
+                    operand = stack.pop()
+                    unaryObj = Unary(lexeme)
+                    unaryObj.setOperand(operand)
+                    stack.append(unaryObj)
 #!class functions, function call etc
 
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
@@ -1041,7 +1210,7 @@ def makeLexeme(mismo,lex_type,lexemes): #* function that constructs a lexeme obj
     tempLexeme.export(lexAndSymbolTables) # add the lexeme to the table in the GUI
     
 def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes):
-    print("CHECKING:", word)
+    # print("CHECKING:", word)
 
     if word == "":
         return True
@@ -1073,6 +1242,7 @@ def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes):
     return False
 
 def willBeExpectingIdentifier(word, keywords, literals, identifiers, operations, lexemes):
+    print("INIT CHECK ",word)
     if word == "I HAS A":
         return True, False, False
     elif word == "IM IN YR":
@@ -1106,14 +1276,15 @@ def lexicalAnalysis():
 
     for character in code: # iterate through every character in the source code
         if character == " " and not stringDelimiterActive and not single_line_comment and not multi_line_comment:
-            print("<SPACE>")
-            print(scanned_word)
+            # print("<SPACE>")
+            # print(scanned_word)
 
             if re.match("^BTW$", scanned_word):
                 single_line_comment = True
 
             if varInitActive or loopInitActive or fxnInitActive:
-                if re.match("[a-z]+[a-zA-Z0-9_]+", scanned_word):
+                if re.match("[a-z]+[a-zA-Z0-9_]*", scanned_word):
+                # if re.match("[a-z]+[a-zA-Z0-9_]+", scanned_word):
                     if varInitActive:
                         makeLexeme(scanned_word, "Variable Identifier", lexemes)
                         varInitActive = False
@@ -1135,8 +1306,8 @@ def lexicalAnalysis():
                 scanned_word = scanned_word + " "
                 
         elif character == "\n" and not stringDelimiterActive and not multi_line_comment:
-            print("<NEW LINE>")
-            print(scanned_word)
+            # print("<NEW LINE>")
+            # print(scanned_word)
 
             if re.match("^OBTW$", scanned_word): # because OBTW should be in a line of its own
                 multi_line_comment = True
@@ -1157,8 +1328,8 @@ def lexicalAnalysis():
             else:
                 scanned_word = scanned_word + " "
         elif character == "\t" and not stringDelimiterActive and not single_line_comment and not multi_line_comment:
-            print("<TAB>")
-            print(scanned_word)
+            # print("<TAB>")
+            # print(scanned_word)
             clear = analyzeKeyword(scanned_word, keywords, literals, identifiers, operations, lexemes)
             if clear:
                 scanned_word = ""
@@ -1232,20 +1403,25 @@ def syntaxAnalysis(): # * function that executes syntax analysis
         statements = programRoot.getStatements()
         statementRoot = Statement()
         statementRoot.lookAhead(statements)
-        print(statementRoot.switchcase)
+        # print(statementRoot.switchcase)
 
-        # print("ASTTAETMENTS")
-        # for statement in programRoot.getStatements():
-        #     for lexeme in statement:
-        #         print(lexeme.getActual())
+        return programRoot, statementRoot
 
 # * ---------------------------------------------------------------------------------------------------------------------
+# * ------------------------------------------------------------------------------------------------------SEMANTIC ANALYSIS
+def semanticAnalysis(statements):
+    print("Semantic Analysis", len(statements))
+    for statement in statements:
+        print(statement)
+# * -----------------------------------------------------------------------------------------------------------------------
 
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     terminal.setDisplay("Compiling...")
     lexicalAnalysis()
-    syntaxAnalysis()
+    programObj, statementsObj = syntaxAnalysis()
+    semanticAnalysis(statementsObj.getProcessedStatements())
+
 
 def readCode(filename): # * function that reads the code in the passed filename
     f = open(filename)
