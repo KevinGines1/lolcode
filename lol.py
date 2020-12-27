@@ -81,8 +81,8 @@ class SourceCode(): # * class for the source code
             "^NOT$": "Not operator",
             "^ANY OF$": "Infinite arity or operator", 
             "^ALL OF$": "Infinite arity and operator",  #! #Both of to ALL OF
-            "^BOTH SAEM$": "Equal comparison operator",
-            "^DIFFRINT$": "Not equal comparison operator",
+            "^BOTH SAEM$": "Equal comparison",
+            "^DIFFRINT$": "Not equal comparison",
             "^SMOOSH$": "Concatenation operator",  #BOTH SAEM to SMOOSH
         }
         self.lexemes=[]
@@ -390,8 +390,6 @@ class Statement():
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)
-            else:
-                print(lexeme.getType(), lexeme.getActual())
             
     def getProcessedStatements(self):
         return self.statements
@@ -425,6 +423,9 @@ class VisibleOperand():
         self.varident= None
         self.linebreak=None
 
+        #! operand
+        self.operand = []
+
     # ! take note order of the operands
     def lookAhead(self, listOfLexemes):
         string_delimiter_flag = False
@@ -440,23 +441,28 @@ class VisibleOperand():
         boolObj = None
         bool2Obj = None
         compObj = None
+        literalObj = None
         
-        # expr_holder = []
+        expr_holder = []
         for lexeme in listOfLexemes:
             if lexeme.getType()=="String Delimiter" and string_delimiter_flag == False and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 string_delimiter_flag = True
                 literalObj = Literal()
+            elif lexeme.getType()=="String Delimiter" and string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                string_delimiter_flag = False
             elif string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 literalObj.setValue(lexeme)
                 self.literal=literalObj
-            elif lexeme.getType()=="String Delimiter" and string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
-                string_delimiter_flag = False
+                self.operand.append(literalObj)
             elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not string_delimiter_flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 literalObj = Literal()
                 literalObj.setValue(lexeme)
                 self.literal=literalObj
-            elif lexeme.getType() == "Variable Identifier" and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                self.operand.append(literalObj)
+            # elif lexeme.getType() == "Variable Identifier" and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            elif lexeme.getType() in ["Variable Identifier", "Identifier"] and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 self.varident = lexeme
+                self.operand.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # arithmetic
                 arithmeticFlag = True
                 arithObj = Arithmetic(lexeme)
@@ -475,15 +481,23 @@ class VisibleOperand():
         if arithmeticFlag and not booleanFlag and not boolean2Flag and not comparisonFlag:
             arithObj.lookAhead(expr_holder)
             self.expr = arithObj
+            self.operand.append(arithObj)
+            arithmeticFlag = False
         elif booleanFlag and not arithmeticFlag and not boolean2Flag and not comparisonFlag:
             boolObj.lookAhead(expr_holder)
             self.expr = boolObj
+            self.operand.append(boolObj)
+            booleanFlag = False
         elif boolean2Flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
             bool2Obj.lookAhead(expr_holder)
             self.expr = bool2Obj
+            self.operand.append(bool2Obj)
+            boolean2Flag = False
         elif comparisonFlag and not arithmeticFlag and not boolean2Flag and not booleanFlag:
             compObj.lookAhead(expr_holder)
             self.expr = compObj
+            self.operand.append(compObj)
+            comparisonFlag = False
 
 # TODO - 1. update symbol table
 # TODO - 2. execute method ng bawat class
@@ -1275,6 +1289,12 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         self.codeOutput.delete('1.0', END)
         self.codeOutput.insert(END, code)
         self.codeOutput.config(state=DISABLED)
+
+    def addToDisplay(self, code):
+        self.codeOutput.config(state=NORMAL)
+        self.codeOutput.insert(END, code)
+        self.codeOutput.insert(END, " ")
+        self.codeOutput.config(state=DISABLED)
         
 #* -------------
 #* -- FUNCTIONS --
@@ -1488,12 +1508,26 @@ def syntaxAnalysis(): # * function that executes syntax analysis
 def semanticAnalysis(statements):
     print("Semantic Analysis", len(statements))
     for statement in statements:
-        print(statement)
+        # print(statement)
+        if isinstance(statement, Print): # encountered a print object
+            # print("found a print")
+            # check if right_operand is valid
+            if isinstance(statement.right_operand, VisibleOperand):
+                # print("valikd right/ operand")
+                visible_operand = statement.right_operand
+                # print("PRINT DAPAT: ",visible_operand.operand)
+                for operand in visible_operand.operand: # iterate through every operand in the visible operand
+                # determine what type the operand is
+                    if isinstance(operand, Literal):
+                        terminal.addToDisplay(operand.literal.getActual())
+                terminal.addToDisplay("\n")
+            else: 
+                pass # TODO : throw an error, invalid visible operand
 # * -----------------------------------------------------------------------------------------------------------------------
 
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
-    terminal.setDisplay("Compiling...")
+    # terminal.setDisplay("Compiling...")
     lexicalAnalysis()
     programObj, statementsObj = syntaxAnalysis()
     semanticAnalysis(statementsObj.getProcessedStatements())
