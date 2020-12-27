@@ -87,6 +87,7 @@ class SourceCode(): # * class for the source code
         }
         self.lexemes=[]
         self.ITZ = ""
+        self.symbolTable = {}
 
     def addCode(self, code): # set the code for object
         self.code = code
@@ -523,26 +524,33 @@ class Literal():
 
 class Vardec():
     def __init__(self):
-        self.left_operand=None
+        self.left_operand=None # I HAS A
         self.varident = None
-        self.varinit = None
+        self.varinit = None # Varinit object
 
     #! take note of variable identifier and identifier
     def lookAhead(self, statement):
         statementHolder = []
         varInitHolder = []
+
+        varInitActive = False
         for lexeme in statement:
             if lexeme.getType()=="Variable Declaration": # I HAS A
                 self.left_operand = lexeme
             # elif lexeme.getType() == "Variable Identifier":
-            elif lexeme.getType() in ["Variable Identifier", "Identifier"]:
+            elif lexeme.getType() in ["Variable Identifier", "Identifier"] and varInitActive == False:
                 self.varident = lexeme 
-            elif lexeme.getType() != "Identifier":
+            # elif lexeme.getType() != "Identifier":
+            elif self.varident != None and self.left_operand != False and not varInitActive: # start of a var init
+                varInitActive = True
+                varInitHolder.append(lexeme)
+            elif varInitActive:
                 varInitHolder.append(lexeme)
 
         varInitObj = Varinit()
         varInitObj.lookAhead(varInitHolder)
         self.varinit = varInitObj
+        varInitActive = False
         
 class Varinit():
     def __init__(self):
@@ -551,8 +559,8 @@ class Varinit():
         self.expr=None
         self.typecast=None  #bonus
         self.varident=None
+        self.right_operand = None
 
-        # ! take note order of the operands
     def lookAhead(self, listOfLexemes): # ITZ operand
         literalObj = None
         exprObj = None
@@ -565,59 +573,84 @@ class Varinit():
         booleanFlag = False
         boolean2Flag = False
         comparisonFlag = False
+        unaryFlag = False
 
         #object holders
         arithObj = None
         boolObj = None
         bool2Obj = None
         compObj = None
+        unaryObj = None
 
         for lexeme in listOfLexemes:
-            if lexeme.getType()=="Variable Assignment" and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag: # ITZ
+            if lexeme.getType()=="Variable Assignment" and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag and not boolean2Flag and not unaryFlag: # ITZ
                 self.left_operand = lexeme
-            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag and not boolean2Flag and not unaryFlag:
                 literalObj = Literal()
                 literalObj.setValue(lexeme)
                 self.literal = literalObj
+                self.right_operand = literalObj
             # elif lexeme.getType() == "Variable Identifier":
-            elif lexeme.getType() in ["Variable Identifier", "Identifier"] and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            elif lexeme.getType() in ["Variable Identifier", "Identifier"] and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag and not boolean2Flag and not unaryFlag:
                 self.varident = lexeme
-            elif lexeme.getType() == "String Delimiter" and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                self.right_operand = lexeme
+            elif lexeme.getType() == "String Delimiter" and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag and not boolean2Flag and not unaryFlag:
                 stringFlag = True # trigger flag
-            elif stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            elif stringFlag and lexeme.getType() != "String Delimiter" and not arithmeticFlag and not booleanFlag and not comparisonFlag and not boolean2Flag and not unaryFlag:
                 # create a literal object for the string
                 literalObj = Literal()
                 literalObj.setValue(lexeme)
                 self.literal = literalObj
-            elif lexeme.getType() == "String Delimiter" and stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                self.right_operand = literalObj
+            elif lexeme.getType() == "String Delimiter" and stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag and not boolean2Flag and not unaryFlag:
                 stringFlag = False # trigger a flag when the end delimiter of a string is encountered
-            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # arithmetic
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag and not boolean2Flag and not unaryFlag: # arithmetic
                 arithmeticFlag = True
                 arithObj = Arithmetic(lexeme)
-            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # boolean
+                expr_holder.append(lexeme)
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag and not boolean2Flag and not unaryFlag: # boolean
                 booleanFlag = True
                 boolObj = Boolean(lexeme)
-            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # comparison
+                expr_holder.append(lexeme)
+            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag and not boolean2Flag and not unaryFlag: # comparison
                 comparisonFlag = True
                 compObj = Comparison(lexeme)
-            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # comparison
+                expr_holder.append(lexeme)
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag and not boolean2Flag and not unaryFlag: # comparison
                 boolean2Flag = True
                 bool2Obj = Boolean2(lexeme)
-            elif arithmeticFlag or booleanFlag or comparisonFlag or boolean2Flag and not stringFlag: 
+                expr_holder.append(lexeme)
+            elif lexeme.getType() == "Not operator" and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag and not boolean2Flag and not unaryFlag:
+                unaryFlag = True
+                unaryObj = Unary(lexeme)
+                expr_holder.append(lexeme)
+            elif arithmeticFlag or booleanFlag or comparisonFlag or boolean2Flag or unaryFlag and not stringFlag: 
                 expr_holder.append(lexeme)
 
-        if arithmeticFlag and not booleanFlag and not boolean2Flag and not comparisonFlag:
+        if arithmeticFlag and not booleanFlag and not boolean2Flag and not comparisonFlag and not unaryFlag:
             arithObj.lookAhead(expr_holder)
             self.expr = arithObj
-        elif booleanFlag and not arithmeticFlag and not boolean2Flag and not comparisonFlag:
+            self.right_operand = arithObj
+            arithmeticFlag = False
+        elif booleanFlag and not arithmeticFlag and not boolean2Flag and not comparisonFlag and not unaryFlag:
             boolObj.lookAhead(expr_holder)
             self.expr = boolObj
-        elif boolean2Flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            self.right_operand = boolObj
+            booleanFlag = False
+        elif boolean2Flag and not arithmeticFlag and not booleanFlag and not comparisonFlag and not unaryFlag:
             bool2Obj.lookAhead(expr_holder)
             self.expr = bool2Obj
-        elif comparisonFlag and not arithmeticFlag and not boolean2Flag and not booleanFlag:
+            self.right_operand = bool2Obj
+            boolean2Flag = False
+        elif comparisonFlag and not arithmeticFlag and not boolean2Flag and not booleanFlag and not unaryFlag:
             compObj.lookAhead(expr_holder)
             self.expr = compObj
+            self.right_operand = compObj
+            comparisonFlag = False
+        elif unaryFlag and not comparisonFlag and not arithmeticFlag and not boolean2Flag and not booleanFlag:
+            unaryObj.lookAhead(expr_holder)
+            self.expr = unaryObj
+            self.right_operand = unaryObj
     
 class Input():  #* how to implement 
     def __init__(self):
@@ -852,7 +885,6 @@ class Comparison():
             elif lexeme.getType() in ["Equal comparison", "Not equal comparison"]:
                 right_operand = stack.pop()
                 left_operand = stack.pop()
-                print("LEXEME: ", lexeme.getType(), lexeme.getActual())
                 if len(stack) == 0 and index == 0: # reached the end of statement
                     self.left_operand = left_operand
                     self.right_operand = right_operand
@@ -915,8 +947,8 @@ class Arithmetic():
             if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
                 stack.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator"]:
-                right_operand = stack.pop()
                 left_operand = stack.pop()
+                right_operand = stack.pop()
 
                 if len(stack) == 0 and index == 0: # reached the end of statement
                     self.left_operand = left_operand
@@ -1239,14 +1271,14 @@ class Unary():
                 boolObj.setValue(getBoolValue(lexeme, right_operand, left_operand))
                 stack.append(boolObj)
             elif lexeme.getType() == "Not operator": # NOT
+                operand = stack.pop()
                 if len(stack) == 0 and index == 0: # reached the end of statement
-                    self.operand = stack.pop()
+                    self.operand = operand
                     self.value = getUnaryValue(lexeme, self.operand)
                 else: # nested unary 
-                    operand = stack.pop()
                     unaryObj = Unary(lexeme)
                     unaryObj.setOperand(operand)
-                    unaryObj.setValue(getUnary(lexeme, operand))
+                    unaryObj.setValue(getUnaryValue(lexeme, operand))
                     stack.append(unaryObj)
 #!class functions, function call etc
 
@@ -1554,16 +1586,29 @@ def semanticAnalysis(statements):
                     if isinstance(operand, Literal):
                         terminal.addToDisplay(operand.literal.getActual())
                     elif isinstance(operand, Arithmetic) or isinstance(operand, Boolean) or isinstance(operand, Comparison):
-                        # terminal.addToDisplay(operand.executeOperation())
-                        print("OPERANDS")
-                        # print(operand.left_operand.getType())
-                        # print(operand.right_operand.getType())
-                        print(operand)
-                        print(operand.value)
+                        # print(operand)
+                        # print(operand.value)
                         terminal.addToDisplay(operand.value)
+                    elif operand.getType() == "Identifier":
+                        # REFER TO ITS VALUE IN THE SYMBOL TABLE
+                        # print(operand.getType())
+                        displayMe = theCode.symbolTable[operand.getActual()]
+                        print(displayMe)
+                        terminal.addToDisplay(displayMe)
                 terminal.addToDisplay("\n")
             else: 
-                pass # TODO : throw an error, invalid visible operand
+                print("INVALID VISIBLE OPERAND!!")
+                # TODO : throw an error, invalid visible operand
+        elif isinstance(statement, Vardec): # encountered a variable declaration object
+            if statement.varident != None:
+                # print(statement.varident, " -> ", statement.varinit.right_operand)
+                value = getObjectValue(statement.varinit.right_operand)
+                # print("ITZ: ", value)
+                theCode.symbolTable[statement.varident.getActual()] = value
+            else:
+                # TODO : throw an error, invalid varident
+                print("No varident! Error!")
+
 # * -----------------------------------------------------------------------------------------------------------------------
 def parse(operand):
     try: 
@@ -1598,11 +1643,17 @@ def getBoolValue(lexeme, right, left):
     calc_left = parseBool(left)
 
     if lexeme.getType() == "and operator":
-        return str(calc_right and calc_left)
+        value = calc_right and calc_left
+        returnMe = "WIN" if value == True else "FAIL"
+        return returnMe
     elif lexeme.getType() == "or operator":
-        return str(calc_right or calc_left)
+        value = calc_right or calc_left
+        returnMe = "WIN" if value == True else "FAIL"
+        return returnMe
     elif lexeme.getType() -- "XOR operator":
-        return str(calc_right ^ calc_left)
+        value = calc_right ^ calc_left
+        returnMe = "WIN" if value == True else "FAIL"
+        return returnMe
 
 
 
@@ -1626,18 +1677,36 @@ def getValue(lexeme, right, left):
         returnMe = calc_left if calc_left < calc_right else calc_right
         return returnMe
     elif lexeme.getType() == "Equal comparison":
-        return "True" if calc_left == calc_right else "False"
+        return "WIN" if calc_left == calc_right else "FAIL"
     elif lexeme.getType() == "Not equal comparison":
-        return "True" if calc_left != calc_right else "False"
+        return "WIN" if calc_left != calc_right else "FAIL"
 
 
 
 def getUnaryValue(lexeme, operand):
-    calc_operand = parse(operand)
+    calc_operand = parseBool(operand)
+
 
     if lexeme.getType() == "Not operator":
-        return "True" if calc_operand == False else "False"
-        
+        print("GET UNARY VALUE: ", calc_operand)
+        return "WIN" if calc_operand == False else "FAIL"
+
+def getObjectValue(obj_find):
+
+    if isinstance(obj_find, Literal):
+        return obj_find.literal.getActual()
+    elif isinstance(obj_find, Arithmetic) or isinstance(obj_find, Boolean) or isinstance(obj_find, Comparison) or isinstance(obj_find, Unary):
+        return obj_find.value
+    elif isinstance(obj_find, Lexeme):
+
+        if obj_find.getType() == "Identifier":
+            return theCode.symbolTable[obj_find.getActual()]
+        else:
+            return obj_find.getActual() #!
+    else:
+        print("OBHECTN VALUE: ")
+        print(obj_find)
+
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     # terminal.setDisplay("Compiling...")
