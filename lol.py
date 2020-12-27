@@ -441,7 +441,7 @@ class VisibleOperand():
         bool2Obj = None
         compObj = None
         
-        expr_holder = []
+        # expr_holder = []
         for lexeme in listOfLexemes:
             if lexeme.getType()=="String Delimiter" and string_delimiter_flag == False and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 string_delimiter_flag = True
@@ -509,15 +509,15 @@ class Vardec():
         self.varident = None
         self.varinit = None
 
-    #! take note of comments
     #! take note of variable identifier and identifier
     def lookAhead(self, statement):
         statementHolder = []
         varInitHolder = []
         for lexeme in statement:
-            if lexeme.getType()=="Variable Declaration":
+            if lexeme.getType()=="Variable Declaration": # I HAS A
                 self.left_operand = lexeme
-            elif lexeme.getType() == "Variable Identifier":
+            # elif lexeme.getType() == "Variable Identifier":
+            elif lexeme.getType() in ["Variable Identifier", "Identifier"]:
                 self.varident = lexeme 
             elif lexeme.getType() != "Identifier":
                 varInitHolder.append(lexeme)
@@ -540,22 +540,66 @@ class Varinit():
         exprObj = None
         expr_active = False
         expr_holder = []
+
+        # flags
+        stringFlag = False
+        arithmeticFlag = False
+        booleanFlag = False
+        boolean2Flag = False
+        comparisonFlag = False
+
+        #object holders
+        arithObj = None
+        boolObj = None
+        bool2Obj = None
+        compObj = None
+
         for lexeme in listOfLexemes:
-            if lexeme.getType()=="Variable Assignment":
+            if lexeme.getType()=="Variable Assignment" and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag: # ITZ
                 self.left_operand = lexeme
-            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"]:
+            elif lexeme.getType() in ["TROOF Literal", "NUMBR Literal", "NUMBAR Literal", "TYPE Literal"] and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 literalObj = Literal()
                 literalObj.setValue(lexeme)
                 self.literal = literalObj
-            elif lexeme.getType() == "Variable Identifier":
+            # elif lexeme.getType() == "Variable Identifier":
+            elif lexeme.getType() in ["Variable Identifier", "Identifier"] and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 self.varident = lexeme
-            elif expr_active:
+            elif lexeme.getType() == "String Delimiter" and not stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                stringFlag = True # trigger flag
+            elif stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                # create a literal object for the string
+                literalObj = Literal()
+                literalObj.setValue(lexeme)
+                self.literal = literalObj
+            elif lexeme.getType() == "String Delimiter" and stringFlag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+                stringFlag = False # trigger a flag when the end delimiter of a string is encountered
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # arithmetic
+                arithmeticFlag = True
+                arithObj = Arithmetic(lexeme)
+            elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # boolean
+                booleanFlag = True
+                boolObj = Boolean(lexeme)
+            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # comparison
+                comparisonFlag = True
+                compObj = Comparison(lexeme)
+            elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag and not stringFlag: # comparison
+                boolean2Flag = True
+                bool2Obj = Boolean2(lexeme)
+            elif arithmeticFlag or booleanFlag or comparisonFlag or boolean2Flag and not stringFlag: 
                 expr_holder.append(lexeme)
-            else: 
-                expr_active = True
-                exprObj = Expr()
-        if expr_active:
-            exprObj.setExpr(expr_holder) # !
+
+        if arithmeticFlag and not booleanFlag and not boolean2Flag and not comparisonFlag:
+            arithObj.lookAhead(expr_holder)
+            self.expr = arithObj
+        elif booleanFlag and not arithmeticFlag and not boolean2Flag and not comparisonFlag:
+            boolObj.lookAhead(expr_holder)
+            self.expr = boolObj
+        elif boolean2Flag and not arithmeticFlag and not booleanFlag and not comparisonFlag:
+            bool2Obj.lookAhead(expr_holder)
+            self.expr = bool2Obj
+        elif comparisonFlag and not arithmeticFlag and not boolean2Flag and not booleanFlag:
+            compObj.lookAhead(expr_holder)
+            self.expr = compObj
     
 class Input():  #* how to implement 
     def __init__(self):
@@ -649,7 +693,6 @@ class IfClause():
 
     def setRightOperand(self, codeBlock):
         self.right_operand = codeBlock
-
 
 class ElseClause():
     def __init__(self,no_wai_lexeme):
@@ -1235,7 +1278,6 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         
 #* -------------
 #* -- FUNCTIONS --
-# ! notes we should be updating the symbol table that we refer to everytime we encounter an identifier, baka andun na kasi pala siya
 
 # * ---------------------------------------------------------------------------------------------------- LEXICAL ANALYSIS
 def makeLexeme(mismo,lex_type,lexemes): #* function that constructs a lexeme object for a passed string
@@ -1277,7 +1319,6 @@ def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes):
     return False
 
 def willBeExpectingIdentifier(word, keywords, literals, identifiers, operations, lexemes):
-    print("INIT CHECK ",word)
     if word == "I HAS A":
         return True, False, False
     elif word == "IM IN YR":
