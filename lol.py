@@ -466,15 +466,19 @@ class VisibleOperand():
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Modulo Operator", "Maximum Operator", "Minimum Operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # arithmetic
                 arithmeticFlag = True
                 arithObj = Arithmetic(lexeme)
+                expr_holder.append(lexeme)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # boolean
                 booleanFlag = True
                 boolObj = Boolean(lexeme)
+                expr_holder.append(lexeme)
             elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # comparison
                 comparisonFlag = True
                 compObj = Comparison(lexeme)
+                expr_holder.append(lexeme)
             elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # comparison
                 boolean2Flag = True
                 bool2Obj = Boolean2(lexeme)
+                expr_holder.append(lexeme)
             elif arithmeticFlag or booleanFlag or comparisonFlag or boolean2Flag: 
                 expr_holder.append(lexeme)
         
@@ -721,6 +725,7 @@ class Boolean():
         self.booloperation1 = lexeme
         self.left_operand = None
         self.right_operand = None
+        self.value = None
 
     def setLeftOperand(self, left_operand):
         # ! check if operand is valid
@@ -730,11 +735,14 @@ class Boolean():
         # ! check if operand is valid
         self.right_operand = right_operand
 
+    def setValue(self, value):
+        self.value = value
+
     def lookAhead(self, statement):
 
         stack = []
 
-        for index in range(-1, 0):
+        for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
 
             if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # WIN/FAIL , VARIDENT
@@ -742,18 +750,21 @@ class Boolean():
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
                 right_operand = stack.pop()
                 left_operand = stack.pop()
-                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                if len(stack) == 0 and index == 0: # reached the end of statement
                     self.left_operand = left_operand
                     self.right_operand = right_operand
+                    self.value = getBoolValue(lexeme, right_operand, left_operand)
                 else: # nested boolean
                     boolObj = Boolean(lexeme)
                     boolObj.setLeftOperand(left_operand)
                     boolObj.setRightOperand(right_operand)
+                    boolObj.setValue(getBoolValue(lexeme, right_operand, left_operand))
                     stack.append(boolObj)
             elif lexeme.getType() == "Not operator": # NOT
                 operand = stack.pop()
                 unaryObj = Unary(lexeme)
                 unaryObj.setOperand(operand)
+                unaryObj.setValue(getUnaryValue(lexeme, operand))
                 stack.append(unaryObj)
 
 class Boolean2():
@@ -801,6 +812,7 @@ class Comparison():
         #<compoperator> <operand> AN <operation2> <operand> AN <operand> 
         #<compoperator> <comparison> AN <comparison>
         self.right_operand=None
+        self.value = None
 
     def setLeftOperand(self, left_operand):
         # ! check if operand is valid
@@ -810,11 +822,14 @@ class Comparison():
         # ! check if operand is valid
         self.right_operand = right_operand
 
+    def setValue(self, value):
+        self.value = value
+
     def lookAhead(self, statement):
         
         stack = []
 
-        for index in range(-1, 0):
+        for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
             if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
                 stack.append(lexeme)
@@ -824,6 +839,7 @@ class Comparison():
                 arithObj = Arithmetic(lexeme)
                 arithObj.setLeftOperand(left_operand)
                 arithObj.setRightOperand(right_operand)
+                arithObj.setValue(getValue(lexeme, right_operand, left_operand))
                 stack.append(arithObj)
             elif lexeme.getType() in ["Maximum Operator", "Minimum Operator"]:
                 right_operand = stack.pop()
@@ -831,17 +847,21 @@ class Comparison():
                 operation2Obj = Operation2(lexeme)
                 operation2Obj.setLeftOperand(left_operand)
                 operation2Obj.setRightOperand(right_operand)
+                operation2Obj.setValue(getValue(lexeme, right_operand, left_operand))
                 stack.append(operation2Obj)
-            elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"]:
+            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"]:
                 right_operand = stack.pop()
                 left_operand = stack.pop()
-                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                print("LEXEME: ", lexeme.getType(), lexeme.getActual())
+                if len(stack) == 0 and index == 0: # reached the end of statement
                     self.left_operand = left_operand
                     self.right_operand = right_operand
+                    self.value = getValue(lexeme, right_operand, left_operand)
                 else: # nested comparison 
                     comparisonObj = Comparison(lexeme)
                     comparisonObj.setLeftOperand(left_operand)
                     comparisonObj.setRightOperand(right_operand)
+                    comparisonObj.setValue(getValue(lexeme, left_operand, right_operand))
                     stack.append(comparisonObj)
             
 class Operand(): #! no need na ata
@@ -873,6 +893,7 @@ class Arithmetic():
         self.an= None #!
         self.left_operand= None
         self.right_operand= None
+        self.value = None
     
     def setLeftOperand(self, left_operand):
         # ! check if operand is valid
@@ -881,30 +902,32 @@ class Arithmetic():
     def setRightOperand(self, right_operand):
         # ! check if operand is valid
         self.right_operand = right_operand
+    
+    def setValue(self, value):
+        self.value = value
 
     def lookAhead(self, statement):
-        
         stack = []
-
-        for index in range(-1, 0):
+        value = None
+        # for index in range(-1, 0):
+        for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
             if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
                 stack.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator"]:
-                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                right_operand = stack.pop()
+                left_operand = stack.pop()
+
+                if len(stack) == 0 and index == 0: # reached the end of statement
                     self.left_operand = left_operand
                     self.right_operand = right_operand
+                    self.value = getValue(lexeme, right_operand, left_operand)
                 else: # nested arithmetic
-                    right_operand = stack.pop()
-                    left_operand = stack.pop()
                     arithObj = Arithmetic(lexeme)
                     arithObj.setLeftOperand(left_operand)
                     arithObj.setRightOperand(right_operand)
+                    arithObj.setValue(getValue(lexeme, right_operand, left_operand))
                     stack.append(arithObj)
-
-class Operation1(): #! no need na ata
-    def __init__(self,lexemes):
-        self.leaf_operand=None #* SUM OFF | DIFF OF etc
 
 class Operation2():
     def __init__(self,lexeme):
@@ -1190,15 +1213,19 @@ class Unary():
     def __init__(self, lexeme):
         self.unary_opt = lexeme
         self.operand = None
+        self.value = None
 
     def setOperand(self, operand):
         self.operand = operand
+
+    def setValue(self, value):
+        self.value = value
 
     def lookAhead(self, statement):
 
         stack = []
 
-        for index in range(-1, 0):
+        for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
 
             if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # WIN/FAIL , VARIDENT
@@ -1209,14 +1236,17 @@ class Unary():
                 boolObj = Boolean(lexeme)
                 boolObj.setLeftOperand(left_operand)
                 boolObj.setRightOperand(right_operand)
+                boolObj.setValue(getBoolValue(lexeme, right_operand, left_operand))
                 stack.append(boolObj)
             elif lexeme.getType() == "Not operator": # NOT
-                if len(stack) == 0 or (stack[0] == [] and len(stack)==1): # reached the end of statement
+                if len(stack) == 0 and index == 0: # reached the end of statement
                     self.operand = stack.pop()
+                    self.value = getUnaryValue(lexeme, self.operand)
                 else: # nested unary 
                     operand = stack.pop()
                     unaryObj = Unary(lexeme)
                     unaryObj.setOperand(operand)
+                    unaryObj.setValue(getUnary(lexeme, operand))
                     stack.append(unaryObj)
 #!class functions, function call etc
 
@@ -1507,8 +1537,11 @@ def syntaxAnalysis(): # * function that executes syntax analysis
 # * ------------------------------------------------------------------------------------------------------SEMANTIC ANALYSIS
 def semanticAnalysis(statements):
     print("Semantic Analysis", len(statements))
+
     for statement in statements:
-        # print(statement)
+        print(statement)
+
+    for statement in statements:
         if isinstance(statement, Print): # encountered a print object
             # print("found a print")
             # check if right_operand is valid
@@ -1520,11 +1553,91 @@ def semanticAnalysis(statements):
                 # determine what type the operand is
                     if isinstance(operand, Literal):
                         terminal.addToDisplay(operand.literal.getActual())
+                    elif isinstance(operand, Arithmetic) or isinstance(operand, Boolean) or isinstance(operand, Comparison):
+                        # terminal.addToDisplay(operand.executeOperation())
+                        print("OPERANDS")
+                        # print(operand.left_operand.getType())
+                        # print(operand.right_operand.getType())
+                        print(operand)
+                        print(operand.value)
+                        terminal.addToDisplay(operand.value)
                 terminal.addToDisplay("\n")
             else: 
                 pass # TODO : throw an error, invalid visible operand
 # * -----------------------------------------------------------------------------------------------------------------------
+def parse(operand):
+    try: 
+        if operand.getType() == "NUMBR Literal":
+            return int(operand.getActual())
+        elif operand.getType() == "NUMBAR Literal":
+            return float(operand.getActual())
+        else: 
+            print("INVALID LITERAL IN PARSE")
+    except: # an error will be thrown when instance is an object
+    
+        try: 
 
+            return operand.value # in cases when the operand is an object and not a literal
+        except: # in cases when it's neither a numbr/numbar literal or an object
+            print("NOT AN OBJECT AND NOT A NUMBR, NUMBAR LITERAL")
+
+def parseBool(operand):
+    try:
+        if operand.getType() == "TROOF Literal":
+            return True if operand.getActual() == "WIN" else False
+        else:
+            print("INVALID LITERAL IN PARSE BOOL")
+    except:
+        try:
+            return operand.value
+        except:
+            print("NOT AN OBJECT AND NOT A TROOF LITERAL")
+
+def getBoolValue(lexeme, right, left):
+    calc_right = parseBool(right)
+    calc_left = parseBool(left)
+
+    if lexeme.getType() == "and operator":
+        return str(calc_right and calc_left)
+    elif lexeme.getType() == "or operator":
+        return str(calc_right or calc_left)
+    elif lexeme.getType() -- "XOR operator":
+        return str(calc_right ^ calc_left)
+
+
+
+def getValue(lexeme, right, left):
+    #* check if both operands have the same type
+    calc_right = parse(right)
+    calc_left = parse(left)
+
+    if lexeme.getType() == "Addition Operator":
+        return calc_right + calc_left
+    elif lexeme.getType() == "Subtraction Operator":
+        return calc_left - calc_right
+    elif lexeme.getType() == "Multiplication Operator":
+        return calc_right * calc_left
+    elif lexeme.getType() == "Division Operator":
+        return calc_left / calc_right
+    elif lexeme.getType() == "Maximum Operator":
+        returnMe = calc_left if calc_left > calc_right else calc_right
+        return returnMe
+    elif lexeme.getType() == "Minimum Operator":
+        returnMe = calc_left if calc_left < calc_right else calc_right
+        return returnMe
+    elif lexeme.getType() == "Equal comparison":
+        return "True" if calc_left == calc_right else "False"
+    elif lexeme.getType() == "Not equal comparison":
+        return "True" if calc_left != calc_right else "False"
+
+
+
+def getUnaryValue(lexeme, operand):
+    calc_operand = parse(operand)
+
+    if lexeme.getType() == "Not operator":
+        return "True" if calc_operand == False else "False"
+        
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     # terminal.setDisplay("Compiling...")
