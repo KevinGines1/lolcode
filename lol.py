@@ -476,6 +476,10 @@ class VisibleOperand():
                 comparisonFlag = True
                 compObj = Comparison(lexeme)
                 expr_holder.append(lexeme)
+            elif lexeme.getType() == "Implicit Variable" and not arithmeticFlag and not booleanFlag and not comparisonFlag: # implicit variable
+                print("IT ENCOUNTERED")
+                self.varident = lexeme
+                self.operand.append(lexeme)
             elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # comparison
                 boolean2Flag = True
                 bool2Obj = Boolean2(lexeme)
@@ -539,7 +543,8 @@ class Vardec():
                 self.left_operand = lexeme
             # elif lexeme.getType() == "Variable Identifier":
             elif lexeme.getType() in ["Variable Identifier", "Identifier"] and varInitActive == False:
-                self.varident = lexeme 
+                self.varident = lexeme
+                theCode.symbolTable[lexeme.getActual()] = None
             # elif lexeme.getType() != "Identifier":
             elif self.varident != None and self.left_operand != False and not varInitActive: # start of a var init
                 varInitActive = True
@@ -551,6 +556,8 @@ class Vardec():
         varInitObj.lookAhead(varInitHolder)
         self.varinit = varInitObj
         varInitActive = False
+        theCode.symbolTable[self.varident.getActual()] = getObjectValue(varInitObj.right_operand)
+        print("YO WTF",theCode.symbolTable[self.varident.getActual()])
         
 class Varinit():
     def __init__(self):
@@ -944,9 +951,10 @@ class Arithmetic():
         # for index in range(-1, 0):
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
-            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
+            print("LEXEME: ", lexeme.getActual(), lexeme.getType())
+            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier"]:
                 stack.append(lexeme)
-            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator"]:
+            elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator", "Modulo Operator"]:
                 left_operand = stack.pop()
                 right_operand = stack.pop()
 
@@ -1574,11 +1582,10 @@ def semanticAnalysis(statements):
         print(statement)
 
     for statement in statements:
-        if isinstance(statement, Print): # encountered a print object
+        if isinstance(statement, Print): # * encountered a print object
             # print("found a print")
             # check if right_operand is valid
             if isinstance(statement.right_operand, VisibleOperand):
-                # print("valikd right/ operand")
                 visible_operand = statement.right_operand
                 # print("PRINT DAPAT: ",visible_operand.operand)
                 for operand in visible_operand.operand: # iterate through every operand in the visible operand
@@ -1589,25 +1596,30 @@ def semanticAnalysis(statements):
                         # print(operand)
                         # print(operand.value)
                         terminal.addToDisplay(operand.value)
-                    elif operand.getType() == "Identifier":
+                    elif operand.getType() in ["Identifier", "Implicit Variable"]:
                         # REFER TO ITS VALUE IN THE SYMBOL TABLE
                         # print(operand.getType())
                         displayMe = theCode.symbolTable[operand.getActual()]
-                        print(displayMe)
+                        # print(displayMe)
                         terminal.addToDisplay(displayMe)
                 terminal.addToDisplay("\n")
             else: 
                 print("INVALID VISIBLE OPERAND!!")
                 # TODO : throw an error, invalid visible operand
-        elif isinstance(statement, Vardec): # encountered a variable declaration object
+        elif isinstance(statement, Vardec): # *  encountered a variable declaration object
             if statement.varident != None:
                 # print(statement.varident, " -> ", statement.varinit.right_operand)
                 value = getObjectValue(statement.varinit.right_operand)
-                # print("ITZ: ", value)
+                print("ITZ: ", value)
                 theCode.symbolTable[statement.varident.getActual()] = value
             else:
                 # TODO : throw an error, invalid varident
                 print("No varident! Error!")
+        elif isinstance(statement, Arithmetic) or isinstance(statement, Boolean) or isinstance(statement, Comparison): #* encountered an arithmetic, boolean, comparison object
+            value = getObjectValue(statement)
+            print("RANJIT", value)
+            theCode.symbolTable["IT"] = value
+
 
 # * -----------------------------------------------------------------------------------------------------------------------
 def parse(operand):
@@ -1616,6 +1628,16 @@ def parse(operand):
             return int(operand.getActual())
         elif operand.getType() == "NUMBAR Literal":
             return float(operand.getActual())
+        elif operand.getType() in ["Variable Identifier", "Identifier"]:
+            # print("FR SYMBOL TABLE: ", theCode.symbolTable[operand.getActual()])
+            # print("FR SYMBOL TABLE: ", operand.getActual())
+            if re.match("^-?[0-9][0-9]*$", theCode.symbolTable[operand.getActual()]):
+                return int(theCode.symbolTable[operand.getActual()])
+            elif re.match("^-?[0-9]*\.[0-9]+$", theCode.symbolTable[operand.getActual()]):
+                return float(theCode.symbolTable[operand.getActual()])
+            else:
+                print("NOT A VALID IDENTIFIER VALUE!")
+            # return 0
         else: 
             print("INVALID LITERAL IN PARSE")
     except: # an error will be thrown when instance is an object
@@ -1669,7 +1691,15 @@ def getValue(lexeme, right, left):
     elif lexeme.getType() == "Multiplication Operator":
         return calc_right * calc_left
     elif lexeme.getType() == "Division Operator":
-        return calc_left / calc_right
+        try:
+            return calc_left / calc_right
+        except:
+            return 0
+    elif lexeme.getType() == "Modulo Operator":
+        try:
+            return calc_left % calc_right
+        except:
+            return 0
     elif lexeme.getType() == "Maximum Operator":
         returnMe = calc_left if calc_left > calc_right else calc_right
         return returnMe
@@ -1704,8 +1734,7 @@ def getObjectValue(obj_find):
         else:
             return obj_find.getActual() #!
     else:
-        print("OBHECTN VALUE: ")
-        print(obj_find)
+        print("OBHECTN VALUE: ", obj_find)
 
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
