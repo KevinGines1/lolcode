@@ -785,7 +785,7 @@ class Boolean():
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
 
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # WIN/FAIL , VARIDENT
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier"]: # WIN/FAIL , VARIDENT
                 stack.append(lexeme)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
                 right_operand = stack.pop()
@@ -811,27 +811,33 @@ class Boolean2():
     def __init__(self):
         self.boolop2 = None
         self.operands = None
+        self.value = None
 
     def setOperand(self, operands):
         self.operands = operands
+
+    def setValue(self, value):
+        self.value = value
 
     def lookAhead(self, statement):
 
         stack = []
 
-        for index in range(-1, 0):
+        for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # basic operand
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier"]: # basic operand
                 stack.append(lexeme)
             elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]: # infinite arity operators
                 self.boolop2 = lexeme # set the name of the operand
                 #get rid of the [] at the beginning
-                stack.pop(0)
-                if len(stack) == (len(statement)-1): # exclude the operator
+                # stack.pop(0)
+                if index == 0: # exclude the operator; we reached the end of the statement
                     self.operands = stack
+                    self.value = getBool2Value(lexeme, stack)
                 else:# if nested infinite arity is encountered
-                    bool2 = Boolean2
+                    bool2 = Boolean2()
                     bool2.setOperand(stack)
+                    bool2.setValue(getBool2Value(lexeme, stack))
                     stack.clear()
                     stack.append(bool2)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
@@ -871,7 +877,7 @@ class Comparison():
 
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
-            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier"]:
+            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier"]:
                 stack.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator"]:
                 right_operand = stack.pop()
@@ -1615,7 +1621,7 @@ def semanticAnalysis(statements):
             else:
                 # TODO : throw an error, invalid varident
                 print("No varident! Error!")
-        elif isinstance(statement, Arithmetic) or isinstance(statement, Boolean) or isinstance(statement, Comparison) or isinstance(statement, Unary): #* encountered an arithmetic, boolean, comparison object
+        elif isinstance(statement, Arithmetic) or isinstance(statement, Boolean) or isinstance(statement, Comparison) or isinstance(statement, Unary) or isinstance(statement, Boolean2): #* encountered an arithmetic, boolean, comparison object
             value = getObjectValue(statement)
             print("RANJIT", value)
             theCode.symbolTable["IT"] = value
@@ -1653,7 +1659,7 @@ def parseBool(operand):
         if operand.getType() == "TROOF Literal":
             return True if operand.getActual() == "WIN" else False
         else:
-            print("INVALID LITERAL IN PARSE BOOL")
+            print("INVALID LITERAL IN PARSE BOOL", operand.getActual(), operand.getType())
     except:
         try:
             if operand.value == "WIN":
@@ -1683,6 +1689,28 @@ def getBoolValue(lexeme, right, left):
         value = calc_right ^ calc_left
         returnMe = "WIN" if value == True else "FAIL"
         return returnMe
+
+def getBool2Value(lexeme, stack):
+    # print(lexeme.getActual(), stack)
+    andFlag = None
+    orFlag = None
+    if lexeme.getType() == "Infinite arity and operator":
+        andFlag = True
+    elif lexeme.getType() == "Infinite arity or operator":
+        orFlag = True
+    else:
+        print("INVALID LEXEME VALUE IN BOOL 2")
+
+    if andFlag:
+        for operand in stack:
+            if getObjectValue(operand) == False or getObjectValue(operand) == "FAIL":
+                return "FAIL"
+        return "WIN"
+    elif orFlag:
+        for operand in stack:
+            if getObjectValue(operand) == True or getObjectValue(operand) == "WIN":
+                return "WIN"
+        return "FAIL"
 
 
 
@@ -1731,7 +1759,7 @@ def getObjectValue(obj_find):
 
     if isinstance(obj_find, Literal):
         return obj_find.literal.getActual()
-    elif isinstance(obj_find, Arithmetic) or isinstance(obj_find, Boolean) or isinstance(obj_find, Comparison) or isinstance(obj_find, Unary):
+    elif isinstance(obj_find, Arithmetic) or isinstance(obj_find, Boolean) or isinstance(obj_find, Comparison) or isinstance(obj_find, Unary) or isinstance(obj_find, Boolean2):
         return obj_find.value
     elif isinstance(obj_find, Lexeme):
 
