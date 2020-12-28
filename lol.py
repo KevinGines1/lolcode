@@ -477,7 +477,7 @@ class VisibleOperand():
                 compObj = Comparison(lexeme)
                 expr_holder.append(lexeme)
             elif lexeme.getType() == "Implicit Variable" and not arithmeticFlag and not booleanFlag and not comparisonFlag: # implicit variable
-                print("IT ENCOUNTERED")
+                # print("IT ENCOUNTERED")
                 self.varident = lexeme
                 self.operand.append(lexeme)
             elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"] and not arithmeticFlag and not booleanFlag and not comparisonFlag: # comparison
@@ -1268,7 +1268,7 @@ class Unary():
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
 
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier"]: # WIN/FAIL , VARIDENT
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier"]: # WIN/FAIL , VARIDENT
                 stack.append(lexeme)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
                 right_operand = stack.pop()
@@ -1615,7 +1615,7 @@ def semanticAnalysis(statements):
             else:
                 # TODO : throw an error, invalid varident
                 print("No varident! Error!")
-        elif isinstance(statement, Arithmetic) or isinstance(statement, Boolean) or isinstance(statement, Comparison): #* encountered an arithmetic, boolean, comparison object
+        elif isinstance(statement, Arithmetic) or isinstance(statement, Boolean) or isinstance(statement, Comparison) or isinstance(statement, Unary): #* encountered an arithmetic, boolean, comparison object
             value = getObjectValue(statement)
             print("RANJIT", value)
             theCode.symbolTable["IT"] = value
@@ -1656,7 +1656,12 @@ def parseBool(operand):
             print("INVALID LITERAL IN PARSE BOOL")
     except:
         try:
-            return operand.value
+            if operand.value == "WIN":
+                return True
+            elif operand.value == "FAIL":
+                return False
+            else:
+                return operand.value
         except:
             print("NOT AN OBJECT AND NOT A TROOF LITERAL")
 
@@ -1664,6 +1669,8 @@ def getBoolValue(lexeme, right, left):
     calc_right = parseBool(right)
     calc_left = parseBool(left)
 
+    print("LEXEME:", lexeme.getActual(), lexeme.getType())
+    print("WTF", calc_right ^ calc_left)
     if lexeme.getType() == "and operator":
         value = calc_right and calc_left
         returnMe = "WIN" if value == True else "FAIL"
@@ -1672,7 +1679,7 @@ def getBoolValue(lexeme, right, left):
         value = calc_right or calc_left
         returnMe = "WIN" if value == True else "FAIL"
         return returnMe
-    elif lexeme.getType() -- "XOR operator":
+    elif lexeme.getType() == "XOR operator":
         value = calc_right ^ calc_left
         returnMe = "WIN" if value == True else "FAIL"
         return returnMe
@@ -1716,9 +1723,8 @@ def getValue(lexeme, right, left):
 def getUnaryValue(lexeme, operand):
     calc_operand = parseBool(operand)
 
-
     if lexeme.getType() == "Not operator":
-        print("GET UNARY VALUE: ", calc_operand)
+        # print("GET UNARY VALUE: ", calc_operand)
         return "WIN" if calc_operand == False else "FAIL"
 
 def getObjectValue(obj_find):
