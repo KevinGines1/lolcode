@@ -267,7 +267,7 @@ class Statement():
                 boolObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
                 self.statements.append(boolObj)
-            elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
+            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
                 compObj = Comparison(lexeme)
                 compObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
@@ -509,7 +509,6 @@ class VisibleOperand():
             comparisonFlag = False
 
 # TODO - 1. update symbol table
-# TODO - 2. execute method ng bawat class
 # TODO : expr -- di na ata need itong class na ito?
 
 class Expr():
@@ -557,7 +556,7 @@ class Vardec():
         self.varinit = varInitObj
         varInitActive = False
         theCode.symbolTable[self.varident.getActual()] = getObjectValue(varInitObj.right_operand)
-        print("YO WTF",theCode.symbolTable[self.varident.getActual()])
+        print("Var Declared: ", self.varident.getActual(), " : ", theCode.symbolTable[self.varident.getActual()])
         
 class Varinit():
     def __init__(self):
@@ -877,28 +876,30 @@ class Comparison():
 
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
+            print("LEXEME: ", lexeme.getActual(), lexeme.getType())
             if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier"]:
                 stack.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator"]:
-                right_operand = stack.pop()
                 left_operand = stack.pop()
+                right_operand = stack.pop()
                 arithObj = Arithmetic(lexeme)
                 arithObj.setLeftOperand(left_operand)
                 arithObj.setRightOperand(right_operand)
                 arithObj.setValue(getValue(lexeme, right_operand, left_operand))
                 stack.append(arithObj)
             elif lexeme.getType() in ["Maximum Operator", "Minimum Operator"]:
-                right_operand = stack.pop()
                 left_operand = stack.pop()
+                right_operand = stack.pop()
                 operation2Obj = Operation2(lexeme)
                 operation2Obj.setLeftOperand(left_operand)
                 operation2Obj.setRightOperand(right_operand)
                 operation2Obj.setValue(getValue(lexeme, right_operand, left_operand))
                 stack.append(operation2Obj)
             elif lexeme.getType() in ["Equal comparison", "Not equal comparison"]:
-                right_operand = stack.pop()
                 left_operand = stack.pop()
+                right_operand = stack.pop()
                 if len(stack) == 0 and index == 0: # reached the end of statement
+                    print("empty stack detected")
                     self.left_operand = left_operand
                     self.right_operand = right_operand
                     self.value = getValue(lexeme, right_operand, left_operand)
@@ -980,6 +981,9 @@ class Operation2():
         self.leaf_operand=lexeme
         self.left_operand = None
         self.right_operand = None
+
+    def setValue(self, value):
+        self.value = value
 
     def setLeftOperand(self,lexeme):
         #! check if operand is valid
@@ -1637,10 +1641,14 @@ def parse(operand):
         elif operand.getType() in ["Variable Identifier", "Identifier"]:
             # print("FR SYMBOL TABLE: ", theCode.symbolTable[operand.getActual()])
             # print("FR SYMBOL TABLE: ", operand.getActual())
-            if re.match("^-?[0-9][0-9]*$", theCode.symbolTable[operand.getActual()]):
+            if re.match("^-?[0-9][0-9]*$", theCode.symbolTable[operand.getActual()]): # matched with a numbr literal
                 return int(theCode.symbolTable[operand.getActual()])
-            elif re.match("^-?[0-9]*\.[0-9]+$", theCode.symbolTable[operand.getActual()]):
+            elif re.match("^-?[0-9]*\.[0-9]+$", theCode.symbolTable[operand.getActual()]): # matched with a numbar literal
                 return float(theCode.symbolTable[operand.getActual()])
+            elif theCode.symbolTable[operand.getActual()] == "WIN":
+                return True
+            elif theCode.symbolTable[operand.getActual()] == "FAIL":
+                return False
             else:
                 print("NOT A VALID IDENTIFIER VALUE!")
             # return 0
@@ -1742,9 +1750,18 @@ def getValue(lexeme, right, left):
         returnMe = calc_left if calc_left < calc_right else calc_right
         return returnMe
     elif lexeme.getType() == "Equal comparison":
-        return "WIN" if calc_left == calc_right else "FAIL"
+        print(calc_left, " equal with ", calc_right)
+        # print(type(calc_left), type(calc_right))
+        if (type(calc_left) == type(calc_right)) and (calc_left == calc_right): 
+            return "WIN"
+        else:
+            return "FAIL"
     elif lexeme.getType() == "Not equal comparison":
-        return "WIN" if calc_left != calc_right else "FAIL"
+        print(calc_left, " diffrint with ", calc_right)
+        if (type(calc_left) != type(calc_right)) or (calc_left != calc_right): 
+            return "WIN"
+        else:
+            return "FAIL"
 
 
 
