@@ -672,7 +672,7 @@ class Input():  #* how to implement
         for lexeme in statement:
             if lexeme.getType() == "User input":
                 self.gimmeh = lexeme
-            elif lexeme.getType() == "Variable Identifier":
+            elif lexeme.getType() in ["Variable Identifier", "Identifier"]:
                 self.varident = lexeme
 
 class Assignment(): # TODO : NOT operator
@@ -1727,7 +1727,10 @@ def semanticAnalysis(statements):
                 # print("NO MATCH FOUND", statement.default.codeblock.getProcessedStatements())
                 semanticAnalysis(statement.default.codeblock.getProcessedStatements())
                 # semanticAnalysis(case.)
-
+        elif isinstance(statement, Input):
+            input = getInput()
+            
+            theCode.symbolTable[statement.varident.getActual()] = input
 
             # print(theCode.symbolTable["IT"], statement)
             # compare the value of the implicit variable to every case in switchcase object
@@ -1890,6 +1893,24 @@ def getObjectValue(obj_find):
     else:
         print("OBHECTN VALUE: ", obj_find)
 
+def getInput(): #* function invoked when a GIMMEH is encountered
+    userInput = StringVar()
+    okBtnClicked = IntVar()
+    inputWindow = Toplevel()
+    label = Label(inputWindow, text="INPUT: ", height = 2, width = 50)
+    label.pack()
+    inputGUI = Entry(inputWindow, textvariable=userInput)
+    inputGUI.pack()
+    okBtn = Button(inputWindow, text="OK", command=lambda: okBtnClicked.set(1))
+    okBtn.pack()
+    okBtn.wait_variable(okBtnClicked)
+    returnMe = inputGUI.get()
+
+    if okBtnClicked.get() == 1:
+        inputWindow.destroy()
+
+    return returnMe
+
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     # terminal.setDisplay("Compiling...")
@@ -1918,8 +1939,5 @@ codeSelectAndDisplay = SelectGUI() # create a GUI
 theCode = SourceCode() # create an object for the input Source LOLCode
 lexAndSymbolTables = TablesGUI() # create an object for the tables to be generated
 terminal = TerminalGUI() # create an object for the "terminal"
-
-
-
 
 window.mainloop()
