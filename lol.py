@@ -373,7 +373,6 @@ class Statement():
                     # assign the completed switchCaseObject to the attribute of the statement
                     self.switchcase = switchCaseObject #!
                     self.statements.append(switchCaseObject)
-                    print("WTF",self.switchcase)
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)                
@@ -844,7 +843,7 @@ class Boolean():
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
 
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier"]: # WIN/FAIL , VARIDENT
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier", "Implicit Variable"]: # WIN/FAIL , VARIDENT
                 stack.append(lexeme)
             elif lexeme.getType() in ["and operator", "or operator", "XOR operator"]: # AND OR XOR
                 right_operand = stack.pop()
@@ -884,7 +883,7 @@ class Boolean2():
 
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
-            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier"]: # basic operand
+            if lexeme.getType() in ["TROOF Literal", "Variable Identifier", "Identifier", "Implicit Variable"]: # basic operand
                 stack.append(lexeme)
             elif lexeme.getType() in ["Infinite arity or operator", "Infinite arity and operator"]: # infinite arity operators
                 self.boolop2 = lexeme # set the name of the operand
@@ -937,7 +936,7 @@ class Comparison():
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
             # print("LEXEME: ", lexeme.getActual(), lexeme.getType())
-            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier"]:
+            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier", "Implicit Variable"]:
                 stack.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator"]:
                 left_operand = stack.pop()
@@ -1019,7 +1018,7 @@ class Arithmetic():
         for index in range(len(statement)-1, -1, -1):
             lexeme = statement[index]
             # print("LEXEME: ", lexeme.getActual(), lexeme.getType())
-            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier"]:
+            if lexeme.getType() in ["NUMBR Literal", "NUMBAR Literal", "Variable Identifier", "Identifier", "Implicit Variable"]:
                 stack.append(lexeme)
             elif lexeme.getType() in ["Addition Operator", "Subtraction Operator", "Multiplication Operator", "Division Operator", "Maximum Operator", "Minimum Operator", "Modulo Operator"]:
                 left_operand = stack.pop()
@@ -1712,6 +1711,27 @@ def semanticAnalysis(statements):
             elif theCode.symbolTable["IT"] == "FAIL":
                 # print("FALSE BRANCHJ", statement.elseclause)
                 semanticAnalysis(statement.elseclause.right_operand.getProcessedStatements())
+        elif isinstance(statement, SwitchCase):
+            # print("encountered switch statement")
+            itVar = theCode.symbolTable["IT"]
+            cases = statement.case
+            foundCaseFlag = False
+            for case in cases:
+                # print("CASE: ",case.literal.getActual())
+                if case.literal.getActual() == itVar:
+                    # print("MATCHED WITH", case.literal.getActual(), case.codeblock.getProcessedStatements())
+                    foundCaseFlag = True
+                    semanticAnalysis(case.codeblock.getProcessedStatements())
+            
+            if not foundCaseFlag:
+                # print("NO MATCH FOUND", statement.default.codeblock.getProcessedStatements())
+                semanticAnalysis(statement.default.codeblock.getProcessedStatements())
+                # semanticAnalysis(case.)
+
+
+            # print(theCode.symbolTable["IT"], statement)
+            # compare the value of the implicit variable to every case in switchcase object
+            # if found a case/ reached default case, semanticAnalysis(codeBlock)
 
 # * -----------------------------------------------------------------------------------------------------------------------
 def parse(operand):
@@ -1720,7 +1740,7 @@ def parse(operand):
             return int(operand.getActual())
         elif operand.getType() == "NUMBAR Literal":
             return float(operand.getActual())
-        elif operand.getType() in ["Variable Identifier", "Identifier"]:
+        elif operand.getType() in ["Variable Identifier", "Identifier", "Implicit Variable"]:
             # print("FR SYMBOL TABLE: ", theCode.symbolTable[operand.getActual()])
             # print("FR SYMBOL TABLE: ", operand.getActual())
             if re.match("^-?[0-9][0-9]*$", theCode.symbolTable[operand.getActual()]): # matched with a numbr literal
@@ -1733,9 +1753,8 @@ def parse(operand):
                 return False
             else:
                 print("NOT A VALID IDENTIFIER VALUE!")
-            # return 0
         else: 
-            print("INVALID LITERAL IN PARSE")
+            print("INVALID LITERAL IN PARSE", operand.getActual(), operand.getType())
     except: # an error will be thrown when instance is an object
     
         try: 
@@ -1748,7 +1767,7 @@ def parseBool(operand):
     try:
         if operand.getType() == "TROOF Literal":
             return True if operand.getActual() == "WIN" else False
-        elif operand.getType() in ["Variable Identifier", "Identifier"]:
+        elif operand.getType() in ["Variable Identifier", "Identifier", "Implicit Variable"]:
             if theCode.symbolTable[operand.getActual()] == "WIN":
                 return True
             elif theCode.symbolTable[operand.getActual()] == "FAIL":
