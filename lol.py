@@ -289,8 +289,8 @@ class Statement():
                 self.statements.append(bool2Obj)
             elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
                 # ! REFER TO THE VALUE OF IT NA LANG FOR THE CONDITION
-                ifElseObj = Ifelse(lexeme) # O RLY
-                ifElseObj.setCond(ifCondObj) # !  instead of doing this, add mo na lang dito ung value ni IT
+                ifElseObj = Ifelse(lexeme) # O RLY?
+                # ifElseObj.setCond(ifCondObj) # !  instead of doing this, add mo na lang dito ung value ni IT
                 ifElseFlag = True
             elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # * the true branch for if-else statement
                 ifClauseObject = IfClause(lexeme) # YA RLY
@@ -327,7 +327,7 @@ class Statement():
                     # set the codeblock as the right operand of the ifClause object
                     elseClauseObject.setRightOperand(codeBlockObj)
                     # ifClause is complete so we set it as the attribute of the ifElseObj
-                    ifElseObj.setElseClause(ifClauseObject)
+                    ifElseObj.setElseClause(elseClauseObject)
                     ifElseObj.setOIC(lexeme)
                     # assign the completed if else statement to the attribute
                     self.ifelse = ifElseObj #!
@@ -561,8 +561,8 @@ class Vardec():
         self.varinit = varInitObj
         varInitActive = False
         theCode.symbolTable[self.varident.getActual()] = getObjectValue(varInitObj.right_operand)
-        print("Var Declared: ", self.varident.getActual(), " : ", theCode.symbolTable[self.varident.getActual()])
-        theCode.printSymbolTable()
+        # print("Var Declared: ", self.varident.getActual(), " : ", theCode.symbolTable[self.varident.getActual()])
+        # theCode.printSymbolTable()
         
 class Varinit():
     def __init__(self):
@@ -701,7 +701,7 @@ class Assignment(): # TODO : NOT operator
         expr_holder = []
 
         for lexeme in statement:
-            print("LEXEME: ", lexeme.getActual(), lexeme.getType())
+            # print("LEXEME: ", lexeme.getActual(), lexeme.getType())
             if lexeme.getType()=="String Delimiter" and string_delimiter_flag == False and not arithmeticFlag and not booleanFlag and not comparisonFlag:
                 string_delimiter_flag = True
                 literalObj = Literal()
@@ -755,7 +755,7 @@ class Assignment(): # TODO : NOT operator
             self.right_operand = compObj
             comparisonFlag = False
         theCode.symbolTable[self.left_operand.getActual()] = getObjectValue(self.right_operand)
-        theCode.printSymbolTable()
+        # theCode.printSymbolTable()
         # print("IN THE END: ", self.left_operand.getActual(), theCode.symbolTable[self.left_operand.getActual()])
             
 #! class for concatenation
@@ -798,7 +798,7 @@ class Ifelse():
         self.ifclause = if_clause_object
     
     def setElseClause(self, else_clause_object):
-        self.ifclause = else_clause_object
+        self.elseclause = else_clause_object
 
     def setOIC(self, oic_lexeme):
         self.oic = oic_lexeme
@@ -959,7 +959,7 @@ class Comparison():
                 left_operand = stack.pop()
                 right_operand = stack.pop()
                 if len(stack) == 0 and index == 0: # reached the end of statement
-                    print("empty stack detected")
+                    # print("empty stack detected")
                     self.left_operand = left_operand
                     self.right_operand = right_operand
                     self.value = getValue(lexeme, right_operand, left_operand)
@@ -1111,6 +1111,7 @@ class CodeBlock():
         self.loop=None
         self.function=None
         self.functioncall=None
+        self.statements = []
 
         #!
         self.boolObj = None
@@ -1177,7 +1178,7 @@ class CodeBlock():
                 self.assignment = assignObj #! INCLUDED THE IT R <LITERAL> ASSIGNMENT
                 self.statements.append(assignObj)
             elif lexeme.getType() == "Not operator" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* UNARY OPERATOR
-                print("FOUND UNARY")
+                # print("FOUND UNARY")
                 unaryObj = Unary(lexeme)
                 unaryObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
@@ -1192,7 +1193,7 @@ class CodeBlock():
                 boolObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
                 self.statements.append(boolObj)
-            elif lexeme.getType() in ["Equal comparison operator", "Not equal comparison operator"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
+            elif lexeme.getType() in ["Equal comparison", "Not equal comparison"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* COMPARISON BOTH SAEM, DIFFRINT
                 compObj = Comparison(lexeme)
                 compObj.lookAhead(statement)
                 # TODO: evaluate and add the value to the symbol table under IT
@@ -1209,10 +1210,11 @@ class CodeBlock():
                 self.statements.append(bool2Obj)
             elif lexeme.getType() == "IF-ELSE Statement Opening Delimiter" and ifClauseActive == False and elseClauseActive == False: #* IF STATEMENT
                 # ! REFER TO THE VALUE OF IT NA LANG FOR THE CONDITION
-                ifElseObj = Ifelse(lexeme) # O RLY
-                ifElseObj.setCond(ifCondObj) # !  instead of doing this, add mo na lang dito ung value ni IT
+                ifElseObj = Ifelse(lexeme) # O RLY?
+                # ifElseObj.setCond(ifCondObj) # !  instead of doing this, add mo na lang dito ung value ni IT
                 ifElseFlag = True
             elif lexeme.getType() == "IF TRUE delimiter" and ifElseFlag and ifClauseActive == False and elseClauseActive == False: # * the true branch for if-else statement
+                print("IF TRUE: ", lexeme.getActual(), lexeme.getType())
                 ifClauseObject = IfClause(lexeme) # YA RLY
                 ifClauseActive = True
             elif ifClauseActive and ifElseFlag and elseClauseActive == False: # * codeblock inside true branch
@@ -1247,7 +1249,7 @@ class CodeBlock():
                     # set the codeblock as the right operand of the ifClause object
                     elseClauseObject.setRightOperand(codeBlockObj)
                     # ifClause is complete so we set it as the attribute of the ifElseObj
-                    ifElseObj.setElseClause(ifClauseObject)
+                    ifElseObj.setElseClause(elseClauseObject)
                     ifElseObj.setOIC(lexeme)
                     # assign the completed if else statement to the attribute
                     self.ifelse = ifElseObj #!
@@ -1316,8 +1318,9 @@ class CodeBlock():
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)
-            else:
-                print(lexeme.getType(), lexeme.getActual())
+    
+    def getProcessedStatements(self):
+        return self.statements
 
 class Unary():
     def __init__(self, lexeme):
@@ -1488,6 +1491,7 @@ def willBeExpectingIdentifier(word, keywords, literals, identifiers, operations,
     return False, False, False
     
 def lexicalAnalysis():
+    print("LEXICAL ANALYSIS")
     code = codeSelectAndDisplay.getCodeDisplay().get("1.0", "end") # get the code in the display
     
     keywords = theCode.getKeyWords()
@@ -1693,10 +1697,21 @@ def semanticAnalysis(statements):
             print("RANJIT", value)
             theCode.symbolTable["IT"] = value
         elif isinstance(statement, Assignment): #* encountered an assignment statement
-            pass
+            # pass
+            theCode.symbolTable[statement.left_operand.getActual()] = getObjectValue(statement.right_operand)
+            # theCode.printSymbolTable()
             # * values in assignment are already in the symbol table sa syntax analysis pa lang
             # value = getObjectValue(statement.left_operand)
             # print("assignment encountered")
+        elif isinstance(statement, Ifelse):
+            # print("encountered if else statement")
+            # print(theCode.symbolTable["IT"])
+            if theCode.symbolTable["IT"] == "WIN":
+                # print("TRUE BRANCHJ", statement.ifclause)
+                semanticAnalysis(statement.ifclause.right_operand.getProcessedStatements())
+            elif theCode.symbolTable["IT"] == "FAIL":
+                # print("FALSE BRANCHJ", statement.elseclause)
+                semanticAnalysis(statement.elseclause.right_operand.getProcessedStatements())
 
 # * -----------------------------------------------------------------------------------------------------------------------
 def parse(operand):
