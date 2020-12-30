@@ -355,9 +355,8 @@ class Statement(): # the root node that will hold all the statements
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)
-
-        lexAndSymbolTables.symbolTable.delete(*lexAndSymbolTables.symbolTable.get_children())
-        lexAndSymbolTables.populateSymbolTable(theCode.symbolTable)
+            lexAndSymbolTables.symbolTable.delete(*lexAndSymbolTables.symbolTable.get_children())
+            lexAndSymbolTables.populateSymbolTable(theCode.symbolTable)
             
     def getProcessedStatements(self):
         return self.statements
@@ -1645,8 +1644,9 @@ def semanticAnalysis(statements): #* SEMANTIC ANALYSIS
             # update the symbol table with the input of the user
             theCode.symbolTable[statement.varident.getActual()] = input
             # print(theCode.symbolTable["IT"], statement)
-
-
+        lexAndSymbolTables.symbolTable.delete(*lexAndSymbolTables.symbolTable.get_children())
+        lexAndSymbolTables.populateSymbolTable(theCode.symbolTable)
+        
 # * -----------------------------------------------------------------------------------------------------------------------
 def parse(operand): # * function that converts the value of a lexeme according to the type of that lexeme
     try: 
