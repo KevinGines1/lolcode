@@ -219,27 +219,20 @@ class Statement(): # the root node that will hold all the statements
             if lexeme.getType() == "Output Keyword" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and switchCaseActive == False and caseObjActive == False and defaultObjActive == False: #* PRINT
                 printObj = Print()
                 printObj.lookAhead(statement)
-                # self.print = printObj #!
                 self.statements.append(printObj)
-                # self.print.append(statement)
             elif lexeme.getType() == "Variable Declaration" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and switchCaseActive == False and caseObjActive == False and defaultObjActive == False: #* VAR DEC
                 vardecObj = Vardec()
                 vardecObj.lookAhead(statement)
-                # self.vardec = vardecObj #!
                 self.statements.append(vardecObj)
             elif lexeme.getType() == "User input" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* GIMMEH
                 inputObj = Input()
                 inputObj.lookAhead(statement)
-                # self.input = inputObj #!
                 self.statements.append(inputObj)
-            # elif lexeme.getType() == "Variable Identifier" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
             elif lexeme.getType() in ["Variable Identifier", "Implicit Variable", "Identifier"] and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False: #* ASSIGNMENT
                 assignObj = Assignment()
                 assignObj.lookAhead(statement)
-                # self.assignment = assignObj #! INCLUDED THE IT R <LITERAL> ASSIGNMENT
                 self.statements.append(assignObj)
             elif lexeme.getType() == "Not operator" and ifElseFlag == False and ifClauseActive == False and elseClauseActive == False and caseObjActive == False and defaultObjActive == False and switchCaseActive == False: #* UNARY OPERATOR
-                # print("FOUND UNARY")
                 unaryObj = Unary(lexeme)
                 unaryObj.lookAhead(statement)
                 self.statements.append(unaryObj)
@@ -299,7 +292,6 @@ class Statement(): # the root node that will hold all the statements
                     # ifClause is complete so we set it as the attribute of the ifElseObj
                     ifElseObj.setElseClause(elseClauseObject)
                     ifElseObj.setOIC(lexeme)
-                    # self.ifelse = ifElseObj #!
                     self.statements.append(ifElseObj)
                     clauseListOfStatements = [] # clear the clauseListOfStatements holder
                 else: 
@@ -340,7 +332,6 @@ class Statement(): # the root node that will hold all the statements
                     # clear the list of statements
                     caseListofStatements = []
                     # assign the completed switchCaseObject to the attribute of the statement
-                    # self.switchcase = switchCaseObject #!
                     self.statements.append(switchCaseObject)
                 else:
                     # collect the statements
@@ -364,6 +355,9 @@ class Statement(): # the root node that will hold all the statements
                 else:
                     # collect the statements
                     caseListofStatements.append(statement)
+
+        lexAndSymbolTables.symbolTable.delete(*lexAndSymbolTables.symbolTable.get_children())
+        lexAndSymbolTables.populateSymbolTable(theCode.symbolTable)
             
     def getProcessedStatements(self):
         return self.statements
@@ -373,7 +367,6 @@ class Print(): #* VISIBLE
         self.left_operand=None
         self.right_operand=[]  #may branch
 
-    #! take note of comments
     def lookAhead(self, statement):
         operandHolder = []
         for lexeme in statement:
@@ -385,9 +378,6 @@ class Print(): #* VISIBLE
         visibleOperandObj = VisibleOperand()
         visibleOperandObj.lookAhead(operandHolder)
         self.right_operand = visibleOperandObj
-
-    def execute(self):
-        pass
 
 class VisibleOperand(): #* VISIBLE OPERAND
     def __init__(self):
@@ -447,6 +437,8 @@ class VisibleOperand(): #* VISIBLE OPERAND
                 expr_holder.append(lexeme)
             elif arithmeticFlag or booleanFlag or comparisonFlag or boolean2Flag and not string_delimiter_flag: 
                 expr_holder.append(lexeme) #* collect the statements for an expr
+            else:
+                print("VISIBLE OPERAND ERROR!!!")
         
         #* create an object depending on the expr encountered
         if arithmeticFlag and not booleanFlag and not boolean2Flag and not comparisonFlag:
@@ -1254,7 +1246,6 @@ class Unary(): # * UNARY
                     unaryObj.setValue(getUnaryValue(lexeme, operand))
                     # * add to stack
                     stack.append(unaryObj)
-#!class functions, function call etc
 
 class SelectGUI(): # * class for grouping the select button and displaying the code uploaded
     def __init__(self):
@@ -1306,8 +1297,14 @@ class TablesGUI(): # * class for accessing and displaying the lexemes and symbol
     def populateLexTable(self, word, classification):
         self.lexTable.insert("", "end", values=(str(word), str(classification)))
 
-    def populateSymbolTable(self, word, value):
-        self.lexTable.insert("", "end", values=(str(word), str(value)))
+    # def populateSymbolTable(self, word, value):
+        # self.lexTable.insert("", "end", values=(str(word), str(value)))
+
+    def populateSymbolTable(self, symbolTableDictionary):
+
+        for key,value in symbolTableDictionary.items():
+            # print(key, " : ", value)
+            self.symbolTable.insert("", "end", value=(key, value))
 
 class TerminalGUI(): # * class for accessing and displaying the "terminal", where the output of the program will be displayed
     def __init__(self):
@@ -1337,6 +1334,10 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
 #* -- FUNCTIONS --
 # * ---------------------------------------------------------------------------------------------------- LEXICAL ANALYSIS
 def makeLexeme(mismo,lex_type,lexemes): #* function that constructs a lexeme object for a passed string
+
+    if lex_type == "Variable Identifier": # update the symbol table
+        theCode.symbolTable[mismo] = None
+
     tempLexeme = Lexeme(mismo) # mismong string
     tempLexeme.setType(lex_type) # type of lexeme
     lexemes.append(tempLexeme)
@@ -1352,7 +1353,6 @@ def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes): 
         if re.match(keyword, word):
             if word == "WTF?":
                 raw_string = r"{}".format(word)
-                print(raw_string)
             makeLexeme(word, keywords[keyword], lexemes)
             return True
     
@@ -1363,7 +1363,6 @@ def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes): 
     
     for identifier in identifiers.keys():
         if re.match(identifier, word):
-            # ! print("IDENTIFIER FOUND! WE SHOULD CHECK SYMBOL TABLE!")
             makeLexeme(word, identifiers[identifier], lexemes)
             return True
 
@@ -1375,11 +1374,14 @@ def analyzeKeyword(word, keywords, literals, identifiers, operations, lexemes): 
     return False
 
 def willBeExpectingIdentifier(word, keywords, literals, identifiers, operations, lexemes): # * when a keyword is found that expects an identifer to follow
-    if word == "I HAS A":
+    # if word == "I HAS A":
+    if re.match("^I HAS A$", word):
         return True, False, False
-    elif word == "IM IN YR":
+    # elif word == "IM IN YR":
+    elif re.match("^IM IN YR$", word):
         return False, True, False
-    elif word == "HOW IZ I":
+    # elif word == "HOW IZ I":
+    elif re.match("^HOW IZ I?$", word):
         return False, False, True
     return False, False, False
     
@@ -1401,7 +1403,6 @@ def lexicalAnalysis(): #* LEXICAL ANALYSIS
     fxnInitActive = False # for function identifier
     single_line_comment = False # when true, all characters are part of a single line comment
     multi_line_comment = False # when true, all characters are part of a multi-line comment
-    switch_case_active = False # ! not sure if this will be useful
  
     #* temporary holders
     multi_line_comment_actual = "" # temporary holder for a multi-line comment
@@ -1441,6 +1442,20 @@ def lexicalAnalysis(): #* LEXICAL ANALYSIS
         elif character == "\n" and not stringDelimiterActive and not multi_line_comment:
             # print("<NEW LINE>")
             # print(scanned_word)
+
+            if varInitActive or loopInitActive or fxnInitActive: # in cases of declared but not initialized
+                if re.match("[a-z]+[a-zA-Z0-9_]*", scanned_word):
+                # if re.match("[a-z]+[a-zA-Z0-9_]+", scanned_word):
+                    if varInitActive:
+                        makeLexeme(scanned_word, "Variable Identifier", lexemes)
+                        varInitActive = False
+                    elif loopInitActive:
+                        makeLexeme(scanned_word, "Loop Identifier", lexemes)
+                        loopInitActive = False
+                    elif fxnInitActive:
+                        makeLexeme(scanned_word, "Function Identifier", lexemes)
+                        fxnInitActive = False
+                    clear = True
 
             if re.match("^OBTW$", scanned_word): # because OBTW should be in a line of its own
                 multi_line_comment = True
@@ -1488,6 +1503,8 @@ def lexicalAnalysis(): #* LEXICAL ANALYSIS
             scanned_word = ""
         else:
             scanned_word = scanned_word + character
+    
+    lexAndSymbolTables.populateSymbolTable(theCode.symbolTable)
 
 # * ---------------------------------------------------------------------------------------------------------------------
 # * ------------------------------------------------------------------------------------------------------SYNTAX ANALYSIS
