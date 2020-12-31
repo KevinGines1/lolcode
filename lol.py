@@ -1327,6 +1327,11 @@ class TerminalGUI(): # * class for accessing and displaying the "terminal", wher
         self.codeOutput.insert(END, code)
         self.codeOutput.insert(END, " ")
         self.codeOutput.config(state=DISABLED)
+
+    def clear(self):
+        self.codeOutput.config(state=NORMAL)
+        self.codeOutput.delete("1.0", "end")
+        self.codeOutput.config(state=DISABLED)
         
 #* -------------
 
@@ -1833,6 +1838,11 @@ def getInput(): #* function invoked when a GIMMEH is encountered
 def executeCode(): #* function that executes the loaded code
     # print(codeSelectAndDisplay.getCodeDisplay().get("1.0","end"))
     # terminal.setDisplay("Compiling...")
+    lexAndSymbolTables.lexTable.delete(*lexAndSymbolTables.lexTable.get_children())
+    lexAndSymbolTables.symbolTable.delete(*lexAndSymbolTables.symbolTable.get_children())
+    theCode.lexemes = []
+    theCode.symbolTable = {}
+    terminal.clear()
     lexicalAnalysis()
     programObj, statementsObj = syntaxAnalysis()
     semanticAnalysis(statementsObj.getProcessedStatements())
