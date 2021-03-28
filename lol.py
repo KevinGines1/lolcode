@@ -63,9 +63,6 @@ class SourceCode(): # * class for the source code
         }
         self.identifiers = { # since all regex's for identifiers are the same
             "[a-z]+[a-zA-Z0-9_]*": "Identifier", 
-            # [a-z]+[a-zA-Z0-9_]*": "Variable Identifier", 
-            # "[a-z]+[a-zA-Z0-9_]*": "Function Identifier", 
-            # "[a-z]+[a-zA-Z0-9_]*": "Loop Identifier", 
         }
         self.operations = {
             "^SUM OF$": "Addition Operator" , 
